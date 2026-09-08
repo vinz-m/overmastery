@@ -926,25 +926,23 @@ Not required for the initial MVP.
 
 ## 21. Navigation Direction
 
-Current candidate primary navigation:
+Primary navigation direction:
 
 ```text
-TODAY
-LIFTS
+HOME
+WORKOUTS
+TRAIN
 PROGRESS
+PROFILE
 ```
 
-Workout management may be accessible through Today, settings, or another secondary interface.
-
-This is not finalized.
+Workouts is the planning destination: it contains saved workout templates and the action to create one. The exercise library is a secondary view within this planning area rather than a sixth primary tab. Use **Exercise**, not **Lift**, in navigation and management interfaces.
 
 Avoid conventional SaaS navigation such as:
 
 ```text
 Dashboard
 Analytics
-Exercises
-Workouts
 Settings
 ```
 
@@ -1030,6 +1028,19 @@ Architecture decisions should prioritize:
 - offline reliability
 - inexpensive hosting
 - straightforward multi-user data isolation
+
+### Graceful Failure Handling
+
+Expected failures should be handled deliberately at the boundary where they occur.
+
+- Validate identifiers and user-controlled values before querying the database.
+- Distinguish expected outcomes such as not found, unauthorized, conflict, and invalid input from unexpected infrastructure failures.
+- Show users a clear recovery action without exposing raw database or network errors.
+- Preserve entered workout data whenever retrying is safe.
+- Keep multi-step writes atomic when practical, or compensate explicitly if a later write fails.
+- Log unexpected failures with useful context while excluding credentials and sensitive user data.
+- Avoid broad catches around framework control flow such as redirects; catch only the operation that may fail.
+- Design repeatable mutations to be safe against retries and duplicate submissions.
 
 ---
 

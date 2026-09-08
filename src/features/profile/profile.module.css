@@ -1,0 +1,62 @@
+.page { min-height: 100dvh; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans); }
+.shell { --content-gutter: 28px; position: relative; width: min(100%, 860px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(102px + env(safe-area-inset-bottom)); background: var(--surface-soft); box-shadow: none; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 24px 20px; }
+.header > strong { font-size: 12px; letter-spacing: .16em; }
+.header > span { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--muted); font: 700 11px var(--font-geist-mono); }
+.lead { padding: 34px 20px 32px; }
+.lead > p { color: var(--accent); font: 700 11px var(--font-geist-sans); text-transform: uppercase; letter-spacing: .15em; }
+.lead h1 { font-family: var(--font-display); font-weight: 500; max-width: 420px; margin: 11px 0 17px; font-size: clamp(32px, 5vw, 42px); line-height: 1.15; letter-spacing: -.035em; }
+.lead > span { display: block; max-width: 395px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.identity { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin: 0 12px 30px; padding: 18px; background: var(--accent-soft); color: var(--foreground); }
+.identity div { min-width: 0; display: grid; gap: 6px; }
+.identity span { color: var(--muted); font: 650 11px var(--font-geist-sans); text-transform: uppercase; letter-spacing: .1em; }
+.identity strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.identity > small { flex: none; color: var(--muted); font-size: 12px; }
+.settingsSection { margin: 0 12px 28px; }
+.settingsSection > header { display: grid; gap: 3px; margin-bottom: 10px; padding: 0 8px; }
+.settingsSection > header span { color: var(--muted); font: 650 11px var(--font-geist-sans); text-transform: uppercase; letter-spacing: .1em; }
+.settingsSection > header h2 { font-size: 13px; }
+.settingsSection > form { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border); background: var(--surface); }
+.field { display: grid; gap: 7px; }
+.field > span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.field input, .field select { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--surface-soft); color: var(--foreground); font: 600 13px var(--font-geist-sans); }
+.field > small { color: var(--accent); font-size: 12px; }
+.help { color: var(--muted); font-size: 12px; line-height: 1.55; }
+.settingsSection form > button { min-height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+.settingsSection form > button:disabled { opacity: .55; cursor: wait; }
+.settingsSection form > .secondaryButton { justify-content: center; border: 1px solid var(--border); background: transparent; color: var(--foreground); }
+.success, .error { padding: 10px 12px; font-size: 12px; line-height: 1.45; }
+.success { border-left: 3px solid var(--muted); background: var(--surface-soft); color: var(--muted); }
+.error { border-left: 3px solid var(--accent); background: var(--surface-soft); color: var(--accent); }
+.signOutSection { margin: 0 12px; padding-top: 4px; border-top: 1px solid var(--border); }
+.signOutSection button { width: 100%; min-height: 48px; border: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; }
+.field input:focus-visible, .field select:focus-visible, .settingsSection button:focus-visible, .signOutSection button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (min-width: 700px) { .page { padding-top: 32px; } .shell { --content-gutter: 28px; min-height: calc(100dvh - 32px); } }
+
+/* Shared page rhythm; component rules above describe each screen's content. */
+.page { background: var(--background); }
+.shell, .detailShell { background: var(--background); }
+.lead { padding: 36px 28px; }
+.lead h1 { max-width: 680px; margin: 10px 0 16px; }
+.lead > p, .lead p { font-family: var(--font-geist-sans); font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.lead > span, .lead span { max-width: 540px; font-size: 15px; line-height: 1.7; }
+@media (max-width: 600px) { .lead { padding: 28px 20px; } }
+
+.identity, .settingsSection, .signOutSection { margin-inline: 28px; }
+.identity { align-items: center; padding: 22px 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.identity > small { max-width: 140px; text-align: right; line-height: 1.5; }
+.settingsSection { margin-bottom: 32px; }
+.settingsSection > header { padding: 0; gap: 6px; margin-bottom: 16px; }
+.settingsSection > header h2 { margin: 0; font-size: 18px; font-weight: 500; }
+.settingsSection > form { padding: 24px; gap: 20px; border-radius: 16px; background: var(--surface); }
+.field { gap: 9px; }
+.field > span { font-size: 13px; font-weight: 500; }
+.field input, .field select { min-height: 50px; font-size: 16px; background: var(--background); }
+.help { font-size: 13px; line-height: 1.65; }
+.settingsSection form > button { border-radius: 10px; font-size: 14px; }
+.signOutSection button { color: var(--negative); }
+.identity > small { flex: 0 1 auto; }
+.error { color: var(--negative); border-color: var(--negative); background: #fbefed; }
+.success { color: var(--positive); border-color: var(--positive); background: #edf5f1; }
+@media (max-width: 600px) { .identity, .settingsSection, .signOutSection { margin-inline: 20px; } .settingsSection > form { padding: 20px; } .identity { flex-wrap: wrap; } }
+@media (max-width: 600px) { .identity > small { max-width: none; flex-basis: 100%; text-align: left; } }

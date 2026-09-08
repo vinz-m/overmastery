@@ -12,10 +12,12 @@ import {
   type TrainingSession,
 } from "./model";
 import { createSeedSession } from "./seed";
+import { signOut } from "@/features/auth/actions";
+import { scrollToPageTop } from "@/lib/motion";
 
 type Screen = "home" | "lifts" | "training" | "progress" | "profile" | "summary";
 
-export function OvermasteryApp() {
+export function OvermasteryApp({ userEmail }: { userEmail?: string }) {
   const [session, setSession] = useState<TrainingSession>(() => createSeedSession());
   const [screen, setScreen] = useState<Screen>("home");
   const [exerciseIndex, setExerciseIndex] = useState(0);
@@ -60,7 +62,7 @@ export function OvermasteryApp() {
     {screen === "summary" && <Summary session={session} elapsedMinutes={elapsedMinutes} onNext={startNext} />}
     {screen === "lifts" && <Workspace eyebrow="Lifts" title="Your training library." copy="Exercises, custom movements, and workout templates will live here." />}
     {screen === "progress" && <Workspace eyebrow="Progress" title="What moved forward." copy="Exercise history and factual progression summaries will live here." />}
-    {screen === "profile" && <Workspace eyebrow="Profile" title="Make it yours." copy="Account, units, defaults, and training preferences will live here." />}
+    {screen === "profile" && <AccountWorkspace userEmail={userEmail} />}
     {screen !== "summary" && <AppNav screen={screen} navigate={setScreen} />}
   </main>;
 }
@@ -92,7 +94,7 @@ function Workout({ session, exerciseIndex, elapsedMinutes, updateSets, move, fin
   const remove = (index: number) => exercise.sets.length > 1 && updateSets(exercise.sets.filter((_, setIndex) => setIndex !== index));
   const jumpTo = (index: number) => {
     move(index);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToPageTop();
   };
   const completedForExercise = exercise.sets.filter((set) => set.completed).length;
 
@@ -160,6 +162,10 @@ function Summary({ session, elapsedMinutes, onNext }: { session: TrainingSession
 
 function Workspace({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
   return <section className={styles.workspace}><header className={styles.brandBar}><strong>OVERMASTERY</strong><button aria-label="Open profile">VO</button></header><div><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></div><article><strong>Foundation first</strong><p>This destination is represented in navigation now. Its full workflow comes after active-session behavior and persistence are validated.</p></article></section>;
+}
+
+function AccountWorkspace({ userEmail }: { userEmail?: string }) {
+  return <section className={styles.workspace}><header className={styles.brandBar}><strong>OVERMASTERY</strong><button aria-label="Account initials">{userEmail?.slice(0, 2).toUpperCase() ?? "ME"}</button></header><div><p>Profile</p><h1>Make it yours.</h1><span>Account, units, defaults, and training preferences will live here.</span></div><article><strong>Signed in</strong><p>{userEmail ?? "Your Overmastery account"}</p><form action={signOut}><button type="submit">Sign out</button></form></article></section>;
 }
 
 function AppNav({ screen, navigate }: { screen: Screen; navigate: (screen: Screen) => void }) {

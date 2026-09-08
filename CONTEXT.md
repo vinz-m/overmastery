@@ -33,8 +33,20 @@ An exercise as it appears within a particular training session, including its po
 _Avoid_: Workout exercise
 
 **Set**:
-A single recorded attempt at a session exercise. Only a completed working set contributes to performance.
+A single slot or recorded attempt within a session exercise. Only a completed set contributes to performance.
 _Avoid_: Entry, result
+
+**Planned Set**:
+A set slot created from the workout template when a training session starts. It remains part of that session's plan whether it is open, completed, or skipped.
+_Avoid_: Required set, remaining set
+
+**Extra Set**:
+A set added by the user during a training session beyond the planned sets. It may be removed before completion without changing the original plan.
+_Avoid_: Planned set, bonus set
+
+**Skipped Set**:
+A planned set the user intentionally did not perform. It remains visible in the session record but does not contribute to performance.
+_Avoid_: Deleted set, failed set
 
 **Exercise Exposure**:
 The completed working sets for one exercise within one finished training session.
@@ -43,6 +55,10 @@ _Avoid_: Exercise session, workout result
 **Previous Performance**:
 The most recent completed exposure to an exercise, regardless of which workout template produced it.
 _Avoid_: Last workout
+
+**Exercise Baseline**:
+The first completed performance recorded for an exercise, establishing the reference for future progress comparisons.
+_Avoid_: First recorded exposure, starting score
 
 **Performance**:
 The canonical completed working sets in an exercise exposure. It is the evidence from which comparisons and targets are derived.

@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Overmastery",
-  description: "Know where your lifts stand. Know what to beat next.",
+  title: {
+    default: "Overmastery",
+    template: "%s · Overmastery",
+  },
+  description: "Your plans, sessions, and progress. One step at a time.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

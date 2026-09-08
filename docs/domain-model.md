@@ -51,7 +51,7 @@ Captures an exercise's place in a session. It survives template changes and can 
 
 ### Set
 
-Stores planned defaults and actual performance separately. For the MVP, actual performance consists of weight, repetitions, completion state, and order. Removing an uncompleted set is harmless; removing a completed set is an explicit correction of the session record.
+Stores planned defaults and actual performance separately. Planned sets are copied from the template when the session starts and retain their identity as open, completed, or skipped slots. Sets added during the session are extras outside that original target. For the MVP, actual performance consists of weight, repetitions, completion state, and order. Only completed sets contribute to performance; reopening one is an explicit correction of the session record.
 
 ## Invariants
 
@@ -82,6 +82,10 @@ These rules compare adjacent exposures only. Trend and stall classifications req
 
 - Skipping an exercise creates no exposure.
 - Completing only part of a planned exercise creates an exposure from the completed sets.
+- Skipping an uncompleted planned set preserves its slot and records it as skipped, retaining the original session target while excluding it from performance.
+- Removing an uncompleted extra set deletes that extra from the active session because it was never part of the original plan.
+- Skipping the final open planned set after recording other sets completes the exercise with fewer completed sets than planned. Every session surface must retain the original planned-set count and distinguish completed, skipped, open, and extra outcomes.
+- Set-plan shorthand uses completed repetitions for completed slots, `×` for skipped slots, and `—` for open slots (for example, `12 / × / —`).
 - An exercise added during a session behaves exactly like one copied from a template.
 - Repeating an exercise twice in one session produces two session exercises but one combined exposure only if explicitly grouped in a future version. The MVP prevents duplicate exercise selection within a session.
 - Warm-up sets are deferred. All sets in the MVP are working sets.
