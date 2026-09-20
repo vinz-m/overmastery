@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 
 import {
   comparePerformance,
@@ -73,8 +74,8 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
             </article>
           ))}
         </section>
-        <Link className={styles.homeAction} href="/workouts">
-          Back to workouts <span>→</span>
+        <Link className={styles.homeAction} href="/">
+          Done <ArrowRightIcon aria-hidden="true" size={19} weight="bold" />
         </Link>
       </section>
     </main>

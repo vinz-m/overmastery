@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 export default async function Home() {
   const user = await requireUser();
   const supabase = await createClient();
-  const { activeSession, workouts } = await getWorkoutOverview(supabase);
+  const { activeSession, lastTrainedAt, workouts } =
+    await getWorkoutOverview(supabase);
 
   return (
     <WorkoutHome
@@ -17,6 +18,8 @@ export default async function Home() {
       displayName={user.displayName}
       email={user.email}
       guidance={user.guidance}
+      lastTrainedAt={lastTrainedAt}
+      timeZone={user.timeZone}
       workouts={workouts}
     />
   );

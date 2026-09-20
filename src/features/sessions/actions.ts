@@ -12,12 +12,20 @@ import { canAddExtraSet, exerciseStatusAfterSetChange } from "./set-policy";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export type StartWorkoutState = {
+  message?: string;
+};
+
 export async function startWorkout(
   workoutId: string,
+  previousState: StartWorkoutState,
   formData: FormData,
-) {
+): Promise<StartWorkoutState> {
+  void previousState;
   void formData;
-  if (!uuidPattern.test(workoutId)) redirect("/");
+  if (!uuidPattern.test(workoutId)) {
+    return { message: "This workout is invalid. Refresh and try again." };
+  }
 
   const user = await requireUser();
   const supabase = await createClient();
@@ -53,12 +61,26 @@ export async function startWorkout(
     .is("archived_at", null)
     .single();
 
-  if (templateError || !template) redirect("/");
+  if (templateError || !template) {
+    return {
+      message: "This workout is no longer available. Choose another workout.",
+    };
+  }
 
   const templateExercises = [...template.workout_template_exercises].sort(
     (left, right) => left.position - right.position,
   );
-  if (templateExercises.length === 0) redirect("/");
+  if (templateExercises.length === 0) {
+    return {
+      message: "Add at least one exercise before starting this workout.",
+    };
+  }
+  if (templateExercises.some((item) => !item.exercises)) {
+    return {
+      message:
+        "This workout has an unavailable exercise. Edit it before starting.",
+    };
+  }
 
   const { data: session, error: sessionError } = await supabase
     .from("training_sessions")
@@ -78,7 +100,7 @@ export async function startWorkout(
       .eq("status", "active")
       .maybeSingle();
     if (racedSession) redirect(`/sessions/${racedSession.id}`);
-    redirect("/");
+    return { message: "This workout could not be started. Try again." };
   }
 
   const { data: sessionExercises, error: exerciseError } = await supabase
@@ -98,7 +120,7 @@ export async function startWorkout(
 
   if (exerciseError || !sessionExercises) {
     await supabase.from("training_sessions").delete().eq("id", session.id);
-    redirect("/");
+    return { message: "This workout could not be prepared. Try again." };
   }
 
   const exerciseByTemplateId = new Map(
@@ -123,7 +145,7 @@ export async function startWorkout(
 
   if (setError) {
     await supabase.from("training_sessions").delete().eq("id", session.id);
-    redirect("/");
+    return { message: "This workout could not be prepared. Try again." };
   }
 
   revalidatePath("/");

@@ -3,18 +3,20 @@ import "server-only";
 import { redirect } from "next/navigation";
 
 import { readGuidanceState } from "@/features/guidance/model";
+import { hasVerifiedUser } from "@/lib/auth/session-state";
 import { createClient } from "@/lib/supabase/server";
 import { expirePreviousDaySession } from "@/features/sessions/expire-session";
 import { nextSessionDay } from "@/features/sessions/session-day";
 
 export async function requireUser() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-  const subject = data?.claims?.sub;
+  const result = await supabase.auth.getUser();
 
-  if (error || !subject) {
+  if (!hasVerifiedUser(result)) {
     redirect("/login");
   }
+
+  const subject = result.data.user.id;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -36,9 +38,8 @@ export async function requireUser() {
     id: subject,
     createdAt: profile.created_at,
     displayName: profile.display_name ?? undefined,
-    email:
-      typeof data.claims.email === "string" ? data.claims.email : undefined,
-    guidance: readGuidanceState(data.claims.user_metadata),
+    email: result.data.user.email,
+    guidance: readGuidanceState(result.data.user.user_metadata),
     timeZone: profile.time_zone,
     unitSystem: profile.unit_system,
   };
@@ -46,9 +47,9 @@ export async function requireUser() {
 
 export async function redirectAuthenticatedUser() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
+  const result = await supabase.auth.getUser();
 
-  if (data?.claims?.sub) {
+  if (hasVerifiedUser(result)) {
     redirect("/");
   }
 }

@@ -19,6 +19,7 @@ export default async function ProgressPage() {
       accountLabel={accountLabel}
       activeSessionId={activeSessionId}
       exercises={exercises}
+      guidance={user.guidance}
       sessions={sessions}
       unitSystem={user.unitSystem}
     />

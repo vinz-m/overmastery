@@ -26,6 +26,16 @@ export type CreateExerciseState = {
   message?: string;
 };
 
+export type CustomExerciseState = {
+  archived?: boolean;
+  exercise?: ExerciseCatalogItem;
+  fieldErrors?: {
+    name?: string;
+    trackingType?: string;
+  };
+  message?: string;
+};
+
 const supportedTrackingTypes = new Set<ExerciseTrackingType>([
   "weight_reps",
   "bodyweight_reps",
@@ -91,7 +101,7 @@ export async function createWorkout(
 
   await updateGuidanceMetadata(
     [
-      "home.create-workout.v1",
+      "home.overview.v1",
       "workout-builder.add-exercise.v1",
       "workout-builder.configure-exercise.v1",
       "workout-builder.save-workout.v1",
@@ -238,9 +248,170 @@ export async function createCustomExercise(
     };
   }
 
+  revalidatePath("/workouts");
+
   return {
     exercise: {
       id: data.id,
+      isCustom: true,
+      name: data.name,
+      trackingType: data.tracking_type,
+    },
+  };
+}
+
+export async function updateCustomExercise(
+  exerciseId: string,
+  _previousState: CustomExerciseState,
+  formData: FormData,
+): Promise<CustomExerciseState> {
+  if (!isWorkoutId(exerciseId)) {
+    return { message: "This custom exercise could not be updated." };
+  }
+
+  const user = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const trackingType = String(
+    formData.get("trackingType") ?? "weight_reps",
+  ) as ExerciseTrackingType;
+  const fieldErrors: CustomExerciseState["fieldErrors"] = {};
+
+  if (name.length < 2 || name.length > 120) {
+    fieldErrors.name = "Use between 2 and 120 characters.";
+  }
+  if (!supportedTrackingTypes.has(trackingType)) {
+    fieldErrors.trackingType = "Choose a supported tracking type.";
+  }
+  if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("exercises")
+    .update({ name, tracking_type: trackingType })
+    .eq("id", exerciseId)
+    .eq("owner_user_id", user.id)
+    .is("archived_at", null)
+    .select("id, name, tracking_type")
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      message:
+        error?.code === "23505"
+          ? "You already have a custom exercise with that name."
+          : "The custom exercise could not be updated. Try again.",
+    };
+  }
+
+  revalidatePath("/workouts");
+  return {
+    exercise: {
+      id: data.id,
+      isCustom: true,
+      name: data.name,
+      trackingType: data.tracking_type,
+    },
+  };
+}
+
+export async function archiveCustomExercise(
+  exerciseId: string,
+  _previousState: CustomExerciseState,
+  _formData: FormData,
+): Promise<CustomExerciseState> {
+  void _previousState;
+  void _formData;
+  if (!isWorkoutId(exerciseId)) {
+    return { message: "This custom exercise could not be archived." };
+  }
+
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data: exercise, error: exerciseError } = await supabase
+    .from("exercises")
+    .select("id, name")
+    .eq("id", exerciseId)
+    .eq("owner_user_id", user.id)
+    .is("archived_at", null)
+    .maybeSingle();
+
+  if (exerciseError || !exercise) {
+    return { message: "This custom exercise is no longer available." };
+  }
+
+  const { data: templateLinks, error: linksError } = await supabase
+    .from("workout_template_exercises")
+    .select("workout_templates!inner(name, user_id, archived_at)")
+    .eq("exercise_id", exerciseId)
+    .eq("workout_templates.user_id", user.id)
+    .is("workout_templates.archived_at", null);
+
+  if (linksError) {
+    return { message: "Exercise usage could not be checked. Try again." };
+  }
+
+  const workoutNames = (templateLinks ?? []).flatMap((link) =>
+    link.workout_templates ? [link.workout_templates.name] : [],
+  );
+  if (workoutNames.length > 0) {
+    const shownName = workoutNames[0];
+    const remaining = workoutNames.length - 1;
+    return {
+      message: `Remove this exercise from ${shownName}${remaining > 0 ? ` and ${remaining} other ${remaining === 1 ? "workout" : "workouts"}` : ""} before archiving it.`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("exercises")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", exercise.id)
+    .eq("owner_user_id", user.id)
+    .is("archived_at", null);
+
+  if (error) {
+    return { message: "The custom exercise could not be archived. Try again." };
+  }
+
+  revalidatePath("/workouts");
+  return { archived: true };
+}
+
+export async function restoreCustomExercise(
+  exerciseId: string,
+  _previousState: CustomExerciseState,
+  _formData: FormData,
+): Promise<CustomExerciseState> {
+  void _previousState;
+  void _formData;
+  if (!isWorkoutId(exerciseId)) {
+    return { message: "This custom exercise could not be restored." };
+  }
+
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("exercises")
+    .update({ archived_at: null })
+    .eq("id", exerciseId)
+    .eq("owner_user_id", user.id)
+    .not("archived_at", "is", null)
+    .select("id, name, tracking_type")
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      message:
+        error?.code === "23505"
+          ? "An active custom exercise already uses this name. Rename it before restoring this one."
+          : "This custom exercise could not be restored. Try again.",
+    };
+  }
+
+  revalidatePath("/workouts");
+  return {
+    exercise: {
+      id: data.id,
+      isArchived: false,
       isCustom: true,
       name: data.name,
       trackingType: data.tracking_type,

@@ -14,7 +14,7 @@
   grid-template-columns: minmax(340px, 0.92fr) minmax(420px, 1.08fr);
   overflow: hidden;
   background: var(--surface-soft);
-  box-shadow: 0 30px 90px #2934490a;
+  box-shadow: 0 30px 90px var(--shadow-soft);
 }
 
 .ledger {
@@ -94,6 +94,8 @@
 }
 
 .progression i {
+  display: grid;
+  place-items: center;
   align-self: center;
   color: var(--accent);
   font-style: normal;
@@ -172,6 +174,10 @@
   text-transform: uppercase;
 }
 
+.fieldLabel label {
+  cursor: pointer;
+}
+
 .field input {
   width: 100%;
   min-height: 54px;
@@ -182,7 +188,7 @@
   background: var(--surface);
   color: var(--foreground);
   font: 560 15px var(--font-geist-sans);
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  transition: border-color var(--motion-feedback-duration) var(--motion-feedback-ease), box-shadow var(--motion-feedback-duration) var(--motion-feedback-ease);
 }
 
 .field input::placeholder {
@@ -212,6 +218,16 @@
   background: var(--surface-soft);
 }
 
+.liveRegion {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .success {
   color: var(--muted);
   font-size: 11px;
@@ -227,10 +243,10 @@
   padding: 0 18px;
   border: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font: 780 14px var(--font-geist-sans);
   cursor: pointer;
-  transition: background 140ms ease, transform 140ms ease;
+  transition: background-color var(--motion-feedback-duration) var(--motion-feedback-ease), transform var(--motion-feedback-duration) var(--motion-feedback-ease);
 }
 
 .submit:hover:not(:disabled) {
@@ -316,7 +332,7 @@
 }
 
 .page { background: var(--background); }
-.shell { border: 1px solid var(--border); border-radius: 26px; background: var(--surface); box-shadow: 0 24px 80px #29344908; }
+.shell { border: 1px solid var(--border); border-radius: 26px; background: var(--surface); box-shadow: 0 24px 80px var(--shadow-soft); }
 .ledger { padding: 38px; background: var(--surface-soft); }
 .ledger header { align-items: center; text-transform: none; letter-spacing: 0; font-family: var(--font-geist-sans); font-size: 11px; }
 .ledger header strong { font-size: 19px; letter-spacing: -.7px; font-weight: 600; color: var(--foreground); }
@@ -334,7 +350,7 @@
 .submit:hover:not(:disabled) { background: var(--accent-hover); }
 .switchMode { font-size: 13px; }
 .error, .fieldError { color: var(--negative); }
-.error { background: #fbefed; }
+.error { background: var(--negative-soft); }
 .field input[aria-invalid="true"] { border-color: var(--negative); }
-.success { color: var(--positive); background: #edf5f1; }
+.success { color: var(--positive); background: var(--positive-soft); }
 @media (max-width: 760px) { .shell { border: 0; border-radius: 0; } .ledger { min-height: 210px; padding: 24px; } .ledgerBody { padding: 32px 0 12px; } .ledgerBody > p { font-size: 36px; max-width: 300px; } .entry { padding: 36px 24px 48px; } }

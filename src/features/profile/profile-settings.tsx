@@ -1,9 +1,23 @@
 "use client";
 
 import { useActionState } from "react";
+import { motion } from "motion/react";
+import {
+  ArrowRightIcon,
+  DesktopIcon,
+  MoonIcon,
+  SunIcon,
+} from "@phosphor-icons/react";
 
 import { signOut } from "@/features/auth/actions";
 import { PrimaryNav } from "@/features/navigation/primary-nav";
+import {
+  useTheme,
+  type ThemePreference,
+} from "@/features/theme/theme-provider";
+import { SelectField } from "@/features/ui/select-field";
+import { ContextualTip } from "@/features/guidance/contextual-tip";
+import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
 import type { UnitSystem } from "@/lib/units";
 
 import {
@@ -17,6 +31,10 @@ import { AppHeader } from "@/features/navigation/app-header";
 import styles from "./profile.module.css";
 
 const initialState: ProfileActionState = {};
+const unitOptions = [
+  { label: "Kilograms (kg)", value: "metric" },
+  { label: "Pounds (lb)", value: "imperial" },
+];
 
 export function ProfileSettings({
   dayEndsAt,
@@ -24,6 +42,7 @@ export function ProfileSettings({
   createdAt,
   displayName,
   email,
+  guidance,
   timeZone,
   timeZones,
   unitSystem,
@@ -33,6 +52,7 @@ export function ProfileSettings({
   createdAt?: string;
   displayName: string;
   email: string;
+  guidance: GuidanceState;
   timeZone: string;
   timeZones: string[];
   unitSystem: UnitSystem;
@@ -48,27 +68,41 @@ export function ProfileSettings({
 
         <section className={styles.lead}>
           <p>Profile</p>
-          <h1>Just the way you like it.</h1>
-          <span>Your details, preferences, and account settings, all in one place.</span>
+          <h1>Profile</h1>
+          <span>Manage your training preferences and account.</span>
         </section>
+
+        {!hasSeenGuidance(guidance, "profile.overview.v1") && (
+          <ContextualTip
+            body="Set your theme, units, and time zone here. You can restart these tips whenever you need a refresher."
+            guidanceKey="profile.overview.v1"
+            title="Make the app yours"
+          />
+        )}
 
         <section className={styles.identity}>
           <div><span>Signed in as</span><strong>{email}</strong></div>
           {createdAt && <small>Member since {formatMemberDate(createdAt)}</small>}
         </section>
 
+        <ThemeSettings />
+
         <section className={styles.settingsSection}>
-          <header><span>Profile & training</span><h2>Your defaults</h2></header>
+          <header><span>Training</span><h2>Preferences</h2></header>
           <form action={profileAction}>
             <Field error={profileState.fieldErrors?.displayName} label="Display name">
               <input autoComplete="name" defaultValue={displayName} maxLength={80} name="displayName" required />
             </Field>
-            <Field error={profileState.fieldErrors?.unitSystem} label="Weight display">
-              <select defaultValue={unitSystem} name="unitSystem">
-                <option value="metric">Kilograms (kg)</option>
-                <option value="imperial">Pounds (lb)</option>
-              </select>
-            </Field>
+            <div className={styles.field}>
+              <span>Weight display</span>
+              <SelectField
+                ariaLabel="Weight display"
+                defaultValue={unitSystem}
+                name="unitSystem"
+                options={unitOptions}
+              />
+              {profileState.fieldErrors?.unitSystem && <small role="alert">{profileState.fieldErrors.unitSystem}</small>}
+            </div>
             <Field error={profileState.fieldErrors?.timeZone} label="Time zone">
               <input defaultValue={timeZone} list="time-zones" name="timeZone" required />
               <datalist id="time-zones">
@@ -77,7 +111,7 @@ export function ProfileSettings({
             </Field>
             <p className={styles.help}>Choose the units you prefer. Your previous sessions will use them too.</p>
             <ActionMessage state={profileState} />
-            <button disabled={profilePending} type="submit">{profilePending ? "Saving…" : "Save settings"}<span>→</span></button>
+            <button disabled={profilePending} type="submit">{profilePending ? "Saving…" : "Save settings"}<ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></button>
           </form>
         </section>
 
@@ -113,6 +147,69 @@ export function ProfileSettings({
       </section>
     </main>
   );
+}
+
+const themes: Array<{
+  description: string;
+  icon: "moon" | "sun" | "system";
+  label: string;
+  value: ThemePreference;
+}> = [
+  { description: "Always bright", icon: "sun", label: "Light", value: "light" },
+  { description: "Match this device", icon: "system", label: "System", value: "system" },
+  { description: "Easy on the eyes", icon: "moon", label: "Dark", value: "dark" },
+];
+
+function ThemeSettings() {
+  const { preference, setPreference } = useTheme();
+
+  return (
+    <section className={styles.settingsSection}>
+      <header><span>Appearance</span><h2>Theme</h2></header>
+      <div className={styles.themeCard}>
+        <fieldset className={styles.themeOptions}>
+          <legend className={styles.visuallyHidden}>Choose an app theme</legend>
+          {themes.map((theme) => {
+            const selected = preference === theme.value;
+            return (
+              <label className={styles.themeOption} key={theme.value}>
+                <input
+                  checked={selected}
+                  name="theme"
+                  onChange={() => setPreference(theme.value)}
+                  type="radio"
+                  value={theme.value}
+                />
+                {selected && (
+                  <motion.span
+                    className={styles.themeSelection}
+                    layoutId="profile-theme-selection"
+                    transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+                  />
+                )}
+                <span className={styles.themeIcon} aria-hidden="true">
+                  <ThemeIcon type={theme.icon} />
+                </span>
+                <strong>{theme.label}</strong>
+                <small>{theme.description}</small>
+              </label>
+            );
+          })}
+        </fieldset>
+        <p className={styles.help}>This preference is saved on this device and applies immediately.</p>
+      </div>
+    </section>
+  );
+}
+
+function ThemeIcon({ type }: { type: "moon" | "sun" | "system" }) {
+  if (type === "moon") {
+    return <MoonIcon size={22} weight="regular" />;
+  }
+  if (type === "system") {
+    return <DesktopIcon size={22} weight="regular" />;
+  }
+  return <SunIcon size={22} weight="regular" />;
 }
 
 function Field({ children, error, label }: { children: React.ReactNode; error?: string; label: string }) {

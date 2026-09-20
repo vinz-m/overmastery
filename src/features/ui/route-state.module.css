@@ -1,0 +1,127 @@
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.shell {
+  width: min(100%, 430px);
+}
+
+.header {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+
+.mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.7px;
+}
+
+.brand span,
+.status {
+  color: var(--accent);
+}
+
+.content {
+  margin-top: 44px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px var(--shadow-soft);
+}
+
+.status {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.content h1 {
+  max-width: 16ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 8vw, 38px);
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.description {
+  max-width: 42ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.assurance {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.actions button,
+.actions a {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actions button {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) {
+  .actions button:hover { background: var(--accent-hover); }
+  .actions a:hover { background: var(--surface-soft); }
+}
+
+@media (max-width: 420px) {
+  .page { align-items: start; padding-top: 22px; }
+  .content { margin-top: 34px; padding: 22px 20px; }
+  .actions { grid-template-columns: 1fr; }
+}

@@ -1,56 +1,38 @@
 .page { min-height: 100dvh; background: var(--background); color: var(--foreground); }
-.shell { width: min(100%, 960px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.lead { padding: 40px 28px 36px; }
-.lead > p { margin: 0 0 12px; color: var(--accent); font-size: 12px; font-weight: 600; }
-.lead h1 { max-width: 700px; margin: 0 0 16px; font-family: var(--font-display); font-size: clamp(32px, 4.5vw, 46px); font-weight: 500; line-height: 1.14; letter-spacing: -.035em; overflow-wrap: anywhere; }
-.lead > span { display: block; max-width: 520px; color: var(--muted); font-size: 15px; line-height: 1.7; }
-.emptyState { max-width: 610px; margin: 0 28px; padding: 28px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); }
-.emptyLedger > span { color: var(--foreground); font-size: 16px; font-weight: 600; }
-.emptyLedger ol { display: grid; gap: 4px; margin: 24px 0; padding: 0; list-style: none; }
-.emptyLedger li { display: flex; align-items: center; gap: 16px; min-height: 52px; }
-.emptyLedger i { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-soft); color: var(--accent); font: 500 11px var(--font-geist-mono); }
-.emptyLedger b { font-size: 14px; font-weight: 500; }
-.guide { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; padding: 16px; border-radius: 12px; background: var(--accent-soft); }
-.guide div { display: grid; gap: 5px; }
-.guide span { color: var(--accent); font-size: 11px; font-weight: 600; }
-.guide strong { font-size: 13px; font-weight: 400; }
-.guide button { width: 32px; height: 32px; border: 0; background: transparent; color: var(--muted); font-size: 21px; cursor: pointer; }
-.primaryAction { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 14px 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
-@media (hover: hover) { .primaryAction:hover { background: var(--accent-hover); } }
-.workoutSection { margin: 12px 28px 0; }
-.workoutSection > header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-.workoutSection > header div { display: grid; gap: 5px; }
-.workoutSection > header span { color: var(--muted); font-size: 12px; }
-.workoutSection > header strong { font-size: 20px; font-weight: 500; letter-spacing: -.025em; }
-.workoutSection > header a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-size: 13px; font-weight: 500; text-decoration: none; }
-.workoutList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.workoutCard { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 18px 14px; padding: 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
-.cardIndex { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: var(--surface-soft); color: var(--accent); }
-.cardIndex svg { width: 23px; height: 23px; }
-.cardBody { min-width: 0; }
-.cardBody > span { color: var(--muted); font-size: 12px; }
-.cardBody h2 { margin: 5px 0 10px; font-size: 21px; font-weight: 500; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
-.cardBody p { color: var(--muted); font-size: 13px; line-height: 1.65; }
-.cardBody > small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
-.workoutCard > a { align-self: start; justify-self: end; padding: 8px 10px; border-radius: 8px; color: var(--muted); font-size: 12px; text-decoration: none; }
-@media (hover: hover) { .workoutCard > a:hover { background: var(--surface-soft); color: var(--foreground); } }
-.workoutCard > form { grid-column: 1 / -1; padding-top: 16px; border-top: 1px solid var(--border); }
-.workoutCard > form button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer; }
-@media (hover: hover) { .workoutCard > form button:hover:not(:disabled) { background: #dce6fb; } }
-.workoutCard > form button:disabled { background: var(--surface-soft); color: var(--muted); opacity: .65; cursor: not-allowed; }
-.sessionHint { margin-bottom: 16px; color: var(--muted); font-size: 13px; line-height: 1.6; }
-.activeSessionCard { margin: 0 28px 40px; padding: 26px; border: 1px solid #d6e0f3; border-radius: 20px; background: var(--accent-soft); }
-.activeSessionCard > div { display: flex; justify-content: space-between; gap: 12px; color: var(--accent); font-size: 12px; }
-.activeSessionCard > div > span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
-.activeSessionCard h2 { margin: 14px 0 22px; font-size: 27px; font-weight: 500; letter-spacing: -.03em; overflow-wrap: anywhere; }
-.activeSessionCard > a { display: flex; align-items: center; justify-content: space-between; gap: 32px; width: fit-content; min-width: 220px; min-height: 48px; padding: 12px 18px; border-radius: 11px; background: var(--accent); color: #fff; font-size: 14px; text-decoration: none; }
-@media (min-width: 1000px) { .shell { padding-top: 22px; } .lead { padding-top: 54px; padding-bottom: 44px; } }
-@media (max-width: 600px) {
- .lead { padding: 30px 20px; }
- .workoutSection { margin-inline: 20px; }
- .workoutList { grid-template-columns: 1fr; gap: 12px; }
- .workoutCard { padding: 20px; }
- .emptyState { margin-inline: 20px; padding: 22px; }
- .activeSessionCard { margin: 0 20px 32px; padding: 22px; }
- .activeSessionCard > a { width: 100%; min-width: 0; }
-}
+.shell { width: min(100%, 430px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+.todayHeader, .libraryHeader { padding: 24px 20px 20px; }
+.todayHeader p, .libraryHeader p { margin: 0 0 7px; color: var(--muted); font-size: 12px; }
+.todayHeader h1, .libraryHeader h1 { margin: 0; font-family: var(--font-display); font-size: 36px; font-weight: 600; letter-spacing: -.04em; }
+.todayHeader span, .libraryHeader span { display: block; margin-top: 6px; color: var(--muted); font-size: 14px; }
+.resumeCard, .todayWorkout, .emptyState { margin: 8px 20px 0; padding: 20px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: 0 10px 30px var(--shadow-soft); }
+.resumeCard { background: var(--accent-soft); }
+.resumeCard > div, .todayWorkoutLabel { display: flex; justify-content: space-between; gap: 12px; color: var(--accent); font-size: 12px; }
+.resumeCard h2, .todayWorkout h2, .emptyState h2 { margin: 18px 0 8px; font-size: 25px; font-weight: 600; letter-spacing: -.03em; }
+.resumeCard p, .todayWorkout p, .emptyState > p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.resumeCard > a, .todayWorkout button, .primaryAction, .primaryLink { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 600; text-decoration: none; cursor: pointer; }
+.todayWorkout button:disabled { background: var(--accent-soft); color: var(--accent); cursor: progress; opacity: .8; }
+.alternateWorkout { min-height: 44px; display: flex; align-items: center; justify-content: center; margin-top: 6px; color: var(--accent); font-size: 13px; font-weight: 600; text-underline-offset: 3px; }
+.todayWorkoutLabel span { color: var(--muted); } .todayWorkoutLabel small { color: var(--muted); }
+.guide { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 8px 10px 8px 13px; border-radius: 12px; background: var(--accent-soft); color: var(--muted); font-size: 12px; }
+.guide button { width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); font-size: 20px; }
+.todaySummary { margin: 30px 20px 0; }
+.todaySummary > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.todaySummary h2 { font-size: 18px; } .todaySummary a { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-size: 13px; text-decoration: none; }
+.todaySummary > div { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.todaySummary article { min-height: 96px; display: grid; align-content: center; gap: 9px; padding: 16px; }
+.todaySummary article + article { border-inline-start: 1px solid var(--border); }
+.todaySummary span { color: var(--muted); font-size: 12px; } .todaySummary strong { font: 600 22px var(--font-geist-mono); }
+.libraryHeader { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+.libraryHeader > a { min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+.activeBanner { min-height: 70px; display: grid; grid-template-columns: 1fr 24px; align-items: center; gap: 3px 10px; margin: 0 20px 14px; padding: 13px 16px; border-radius: 16px; background: var(--accent-soft); color: inherit; text-decoration: none; }
+.activeBanner span { color: var(--accent); font-size: 11px; } .activeBanner strong { grid-column: 1; font-size: 14px; } .activeBanner i { grid-column: 2; grid-row: 1 / 3; display: grid; place-items: center; color: var(--accent); font-style: normal; }
+.workoutList { display: grid; gap: 12px; margin: 0 20px; }
+.workoutRow { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.workoutRow > div { min-width: 0; } .workoutRow span { color: var(--muted); font-size: 11px; } .workoutRow h2 { margin: 6px 0 8px; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.workoutRow p { overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.workoutActions { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.workoutActions > a { min-height: 46px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--control-border); border-radius: 12px; color: var(--foreground); font-size: 13px; font-weight: 600; text-decoration: none; }
+.workoutActions form button { width: 100%; min-height: 46px; border: 0; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-weight: 600; cursor: pointer; }
+.workoutRow form button:disabled { color: var(--muted); background: var(--surface-soft); opacity: .65; }
+.primaryAction { margin-top: 18px; }
+@media (hover: hover) { .todayWorkout button:hover, .resumeCard > a:hover, .libraryHeader > a:hover { background: var(--accent-hover); } .alternateWorkout:hover { color: var(--accent-hover); } }

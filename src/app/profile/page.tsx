@@ -23,6 +23,7 @@ export default async function ProfilePage() {
       createdAt={user.createdAt}
       displayName={user.displayName ?? "You"}
       email={user.email ?? "Signed-in account"}
+      guidance={user.guidance}
       timeZone={user.timeZone}
       timeZones={timeZones}
       unitSystem={user.unitSystem}

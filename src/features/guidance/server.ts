@@ -19,11 +19,11 @@ export async function updateGuidanceMetadata(
 ) {
   const validKeys = new Set<string>(guidanceKeys);
   const safeKeys = keys.filter((key) => validKeys.has(key));
-  if (safeKeys.length === 0) return;
+  if (safeKeys.length === 0) return false;
 
   const supabase = existingClient ?? (await createClient());
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return;
+  if (error || !data.user) return false;
 
   const current = readGuidanceState(data.user.user_metadata);
   const next = {
@@ -37,7 +37,7 @@ export async function updateGuidanceMetadata(
     next[outcome].add(key);
   });
 
-  await supabase.auth.updateUser({
+  const { error: updateError } = await supabase.auth.updateUser({
     data: {
       ...data.user.user_metadata,
       overmastery_guidance: {
@@ -46,4 +46,6 @@ export async function updateGuidanceMetadata(
       },
     },
   });
+
+  return !updateError;
 }

@@ -6,8 +6,78 @@ import type { Database } from "@/lib/supabase/database.types";
 
 import type { HomeActiveSession, HomeWorkout } from "./home";
 import type { WorkoutTemplateDraft } from "./types";
+import { latestTrainingDate } from "./workout-overview";
 
 type Client = SupabaseClient<Database>;
+
+export async function getExerciseCatalog(supabase: Client, userId: string) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .select(`
+      id,
+      name,
+      owner_user_id,
+      tracking_type,
+      exercise_muscles (
+        position,
+        role,
+        muscle_groups ( name, slug )
+      )
+    `)
+    .is("archived_at", null)
+    .in("tracking_type", [
+      "weight_reps",
+      "bodyweight_reps",
+      "added_weight_reps",
+      "assistance_reps",
+    ])
+    .order("name");
+
+  if (error) throw new Error("Exercise library could not be loaded.");
+
+  return (data ?? []).map((exercise) => {
+    const primaryMuscle = [...exercise.exercise_muscles]
+      .sort((left, right) => left.position - right.position)
+      .find((muscle) => muscle.role === "primary")?.muscle_groups;
+
+    return {
+      id: exercise.id,
+      isArchived: false,
+      isCustom: exercise.owner_user_id === userId,
+      name: exercise.name,
+      primaryMuscle: primaryMuscle ?? undefined,
+      trackingType: exercise.tracking_type,
+    };
+  });
+}
+
+export async function getArchivedCustomExercises(
+  supabase: Client,
+  userId: string,
+) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .select("id, name, tracking_type")
+    .eq("owner_user_id", userId)
+    .not("archived_at", "is", null)
+    .in("tracking_type", [
+      "weight_reps",
+      "bodyweight_reps",
+      "added_weight_reps",
+      "assistance_reps",
+    ])
+    .order("archived_at", { ascending: false });
+
+  if (error) throw new Error("Archived exercises could not be loaded.");
+
+  return (data ?? []).map((exercise) => ({
+    id: exercise.id,
+    isArchived: true,
+    isCustom: true,
+    name: exercise.name,
+    trackingType: exercise.tracking_type,
+  }));
+}
 
 export async function getWorkoutOverview(supabase: Client) {
   const [{ data, error }, { data: activeData, error: activeError }, { data: historyData, error: historyError }] =
@@ -37,7 +107,6 @@ export async function getWorkoutOverview(supabase: Client) {
         .from("training_sessions")
         .select("ended_at, source_workout_template_id")
         .eq("status", "completed")
-        .not("source_workout_template_id", "is", null)
         .order("ended_at", { ascending: false }),
     ]);
 
@@ -77,7 +146,13 @@ export async function getWorkoutOverview(supabase: Client) {
     };
   });
 
-  return { activeSession, workouts };
+  return {
+    activeSession,
+    lastTrainedAt: latestTrainingDate(
+      (historyData ?? []).map((session) => session.ended_at),
+    ),
+    workouts,
+  };
 }
 
 function formatRepTarget(minimum: number | null, maximum: number | null) {

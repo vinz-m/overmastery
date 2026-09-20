@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState, useTransition } from "react";
+import { motion } from "motion/react";
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  CaretDownIcon,
+  MagnifyingGlassIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 
+import { groupExercises, type ExerciseGroup } from "@/features/exercises/exercise-filter";
 import { recordGuidance } from "@/features/guidance/actions";
 import {
   hasSeenGuidance,
@@ -10,6 +21,8 @@ import {
   type GuidanceOutcome,
   type GuidanceState,
 } from "@/features/guidance/model";
+import { Collapsible, Disclosure } from "@/features/ui/disclosure";
+import { SelectField } from "@/features/ui/select-field";
 
 import {
   archiveWorkout,
@@ -20,10 +33,18 @@ import {
   type CreateWorkoutState,
 } from "./actions";
 import styles from "./create-workout.module.css";
+
+const MotionCaretDown = motion.create(CaretDownIcon);
 import type { ExerciseCatalogItem, WorkoutExerciseDraft, WorkoutTemplateDraft } from "./types";
 
 const initialWorkoutState: CreateWorkoutState = {};
 const initialExerciseState: CreateExerciseState = {};
+const trackingOptions = [
+  { label: "Weight + reps", value: "weight_reps" },
+  { label: "Bodyweight + reps", value: "bodyweight_reps" },
+  { label: "Added weight + reps", value: "added_weight_reps" },
+  { label: "Assistance + reps", value: "assistance_reps" },
+];
 
 export function CreateWorkoutBuilder({
   catalog,
@@ -59,9 +80,9 @@ export function CreateWorkoutBuilder({
 
     return combined
       .filter((exercise) => !selected.some((item) => item.id === exercise.id))
-      .filter((exercise) => !query || exercise.name.toLowerCase().includes(query))
-      .slice(0, 12);
+      .filter((exercise) => !query || exercise.name.toLowerCase().includes(query));
   }, [catalog, exerciseState.exercise, search, selected]);
+  const availableGroups = useMemo(() => groupExercises(available), [available]);
 
   const markGuidance = (key: GuidanceKey, outcome: GuidanceOutcome) => {
     setGuidance((current) => ({
@@ -135,7 +156,7 @@ export function CreateWorkoutBuilder({
     <main className={styles.page}>
       <form action={workoutAction} className={styles.builder}>
         <header className={styles.topbar}>
-          <Link href="/workouts" aria-label={workout ? "Cancel workout editing" : "Cancel workout creation"}>←</Link>
+          <Link href="/workouts" aria-label={workout ? "Cancel workout editing" : "Cancel workout creation"}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <strong>{workout ? "EDIT WORKOUT" : "NEW WORKOUT"}</strong>
           <button disabled={workoutPending || selected.length === 0} type="submit">
             {workoutPending ? "Saving…" : "Save"}
@@ -192,28 +213,40 @@ export function CreateWorkoutBuilder({
                     <header>
                       <button
                         aria-expanded={expandedExerciseId === exercise.id}
+                        aria-controls={`exercise-config-${exercise.id}`}
                         className={styles.configToggle}
                         onClick={() => setExpandedExerciseId((current) => current === exercise.id ? null : exercise.id)}
                         type="button"
                       >
                         <span><strong>{exercise.name}</strong><small>{trackingLabel(exercise.trackingType)}</small></span>
-                        <i aria-hidden="true">{expandedExerciseId === exercise.id ? "−" : "+"}</i>
+                        <MotionCaretDown
+                          animate={{ rotate: expandedExerciseId === exercise.id ? 180 : 0 }}
+                          aria-hidden="true"
+                          initial={false}
+                          size={20}
+                          transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+                          weight="bold"
+                        />
                       </button>
                       <div className={styles.orderButtons}>
-                        <button disabled={index === 0} onClick={() => moveExercise(index, -1)} type="button" aria-label={`Move ${exercise.name} earlier`}>↑</button>
-                        <button disabled={index === selected.length - 1} onClick={() => moveExercise(index, 1)} type="button" aria-label={`Move ${exercise.name} later`}>↓</button>
+                        <button disabled={index === 0} onClick={() => moveExercise(index, -1)} type="button" aria-label={`Move ${exercise.name} earlier`}><ArrowUpIcon aria-hidden="true" size={16} weight="bold" /></button>
+                        <button disabled={index === selected.length - 1} onClick={() => moveExercise(index, 1)} type="button" aria-label={`Move ${exercise.name} later`}><ArrowDownIcon aria-hidden="true" size={16} weight="bold" /></button>
                         <button onClick={() => {
                           setSelected((current) => current.filter((_, itemIndex) => itemIndex !== index));
                           setExpandedExerciseId((current) => current === exercise.id ? null : current);
-                        }} type="button" aria-label={`Remove ${exercise.name}`}>×</button>
+                        }} type="button" aria-label={`Remove ${exercise.name}`}><XIcon aria-hidden="true" size={16} weight="bold" /></button>
                       </div>
                     </header>
-                    {expandedExerciseId === exercise.id && <div className={styles.configGrid}>
+                    <Collapsible
+                      className={styles.configGrid}
+                      id={`exercise-config-${exercise.id}`}
+                      open={expandedExerciseId === exercise.id}
+                    >
                       <NumberField label="Sets" max={20} min={1} value={exercise.targetSets} onChange={(value) => updateExercise(index, "targetSets", value)} />
                       <NumberField label="Rep min" max={100} min={1} value={exercise.targetRepMin} onChange={(value) => updateExercise(index, "targetRepMin", value)} />
                       <NumberField label="Rep max" max={100} min={exercise.targetRepMin} value={exercise.targetRepMax} onChange={(value) => updateExercise(index, "targetRepMax", value)} />
                       <NumberField label="Rest sec" max={3600} min={0} step={15} value={exercise.defaultRestSeconds} onChange={(value) => updateExercise(index, "defaultRestSeconds", value)} />
-                    </div>}
+                    </Collapsible>
                   </div>
                 </li>
               ))}
@@ -223,9 +256,12 @@ export function CreateWorkoutBuilder({
           {workoutState.fieldErrors?.exercises && <p className={styles.formError}>{workoutState.fieldErrors.exercises}</p>}
         </section>
 
-        <details className={styles.catalogDisclosure} open={selected.length === 0 ? true : undefined}>
-          <summary>+ Add exercises</summary>
-          <section className={styles.catalog}>
+        <Disclosure
+          className={styles.catalogDisclosure}
+          contentClassName={styles.catalog}
+          defaultOpen={selected.length === 0}
+          label="Add exercises"
+        >
           <header>
             <div><span>Exercise library</span><strong>Add to this workout</strong></div>
             <small>{catalog.length} available</small>
@@ -240,32 +276,44 @@ export function CreateWorkoutBuilder({
           )}
 
           <label className={styles.search}>
-            <span aria-hidden="true">⌕</span>
+            <span aria-hidden="true"><MagnifyingGlassIcon size={18} weight="bold" /></span>
             <input aria-label="Search exercises" onChange={(event) => setSearch(event.target.value)} placeholder="Search bench, squat, row…" value={search} />
           </label>
 
-          <div className={styles.catalogList}>
-            {available.map((exercise) => (
-              <button key={exercise.id} onClick={() => addExercise(exercise)} type="button">
-                <div><strong>{exercise.name}</strong><small>{exercise.isCustom ? "Custom" : trackingLabel(exercise.trackingType)}</small></div>
-                <span>Add</span>
-              </button>
+          <div className={styles.catalogGroups}>
+            {availableGroups.map((group, index) => (
+              <CatalogGroup
+                addExercise={addExercise}
+                defaultOpen={index === 0}
+                forceOpen={Boolean(search.trim())}
+                group={group}
+                key={group.key}
+              />
             ))}
             {available.length === 0 && <p>No matching exercises. Create a custom one below.</p>}
           </div>
-          </section>
-        </details>
+        </Disclosure>
 
-        <details className={styles.customExercise}>
-          <summary>+ Create a custom exercise</summary>
-          <div>
+        <Disclosure
+          className={styles.customExercise}
+          contentClassName={styles.customExerciseContent}
+          label="Create a custom exercise"
+        >
             <label><span>Exercise name</span><input name="customExerciseName" placeholder="e.g. Cable Y-raise" form="custom-exercise-form" /></label>
-            <label><span>Track with</span><select name="trackingType" form="custom-exercise-form" defaultValue="weight_reps"><option value="weight_reps">Weight + reps</option><option value="bodyweight_reps">Bodyweight + reps</option><option value="added_weight_reps">Added weight + reps</option><option value="assistance_reps">Assistance + reps</option></select></label>
+            <div className={styles.fieldGroup}>
+              <span>Track with</span>
+              <SelectField
+                ariaLabel="Track with"
+                defaultValue="weight_reps"
+                form="custom-exercise-form"
+                name="trackingType"
+                options={trackingOptions}
+              />
+            </div>
             <button disabled={exercisePending} form="custom-exercise-form" type="submit">{exercisePending ? "Creating…" : "Create exercise"}</button>
             {exerciseState.message && <p className={styles.formError}>{exerciseState.message}</p>}
             {exerciseState.exercise && <p className={styles.createdMessage}>{exerciseState.exercise.name} is ready in the library above.</p>}
-          </div>
-        </details>
+        </Disclosure>
 
         {!workout && showSaveGuide && (
           <div className={styles.saveGuide}>
@@ -279,7 +327,7 @@ export function CreateWorkoutBuilder({
 
         {workoutState.message && <p className={styles.submitError} role="alert">{workoutState.message}</p>}
         <button className={styles.saveButton} disabled={workoutPending || selected.length === 0} type="submit">
-          <span>{workoutPending ? "Saving workout…" : workout ? "Save changes" : "Save workout"}</span><span>→</span>
+          <span>{workoutPending ? "Saving workout…" : workout ? "Save changes" : "Save workout"}</span><ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
         </button>
       </form>
 
@@ -297,8 +345,47 @@ export function CreateWorkoutBuilder({
   );
 }
 
+function CatalogGroup({
+  addExercise,
+  defaultOpen,
+  forceOpen,
+  group,
+}: {
+  addExercise: (exercise: ExerciseCatalogItem) => void;
+  defaultOpen: boolean;
+  forceOpen: boolean;
+  group: ExerciseGroup;
+}) {
+  const [userOpen, setUserOpen] = useState(defaultOpen);
+  const open = forceOpen || userOpen;
+
+  const panelId = `workout-catalog-${group.key}`;
+  return (
+    <section className={styles.catalogGroup}>
+      <button
+        aria-controls={panelId}
+        aria-expanded={open}
+        className={styles.catalogGroupHeader}
+        onClick={() => setUserOpen((current) => !current)}
+        type="button"
+      >
+        <span><strong>{group.label}</strong><small>{group.exercises.length} available</small></span>
+        <MotionCaretDown animate={{ rotate: open ? 180 : 0 }} aria-hidden="true" initial={false} size={19} transition={{ type: "spring", duration: 0.3, bounce: 0 }} weight="bold" />
+      </button>
+      <Collapsible className={styles.catalogList} id={panelId} open={open}>
+        {group.exercises.map((exercise) => (
+          <button key={exercise.id} onClick={() => addExercise(exercise)} type="button">
+            <div><strong>{exercise.name}</strong><small>{exercise.isCustom ? "Custom exercise" : trackingLabel(exercise.trackingType)}</small></div>
+            <span>Add</span>
+          </button>
+        ))}
+      </Collapsible>
+    </section>
+  );
+}
+
 function Coachmark({ body, dismiss, label }: { body: string; dismiss: () => void; label: string }) {
-  return <aside className={styles.coachmark} aria-label="Contextual guidance"><div><span>{label}</span><p>{body}</p></div><button onClick={dismiss} type="button" aria-label="Dismiss tip">×</button></aside>;
+  return <aside className={styles.coachmark} aria-label="Contextual guidance"><div><span>{label}</span><p>{body}</p></div><button onClick={dismiss} type="button" aria-label="Dismiss tip"><XIcon aria-hidden="true" size={18} weight="bold" /></button></aside>;
 }
 
 function NumberField({ label, max, min, onChange, step = 1, value }: { label: string; max: number; min: number; onChange: (value: number) => void; step?: number; value: number }) {

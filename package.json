@@ -7,12 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "assets:brand": "node scripts/generate-brand-assets.mjs",
+    "test:auth": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/lib/auth/*.test.ts",
+    "test:exercises": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/features/exercises/*.test.ts",
     "test:sessions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/features/sessions/*.test.ts",
     "test:workouts": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/features/workouts/*.test.ts"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
+    "motion": "^13.2.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8"

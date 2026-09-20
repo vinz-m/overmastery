@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeftIcon } from "@phosphor-icons/react/ssr";
 
 import { formatDuration, formatPerformance, formatSessionDate } from "./format";
 import styles from "./progress.module.css";
@@ -10,7 +11,7 @@ export function SessionHistoryDetail({ session, unitSystem }: { session: History
     <main className={styles.darkPage}>
       <section className={styles.darkShell}>
         <header className={styles.detailHeader}>
-          <Link href="/progress" aria-label="Back to progress">←</Link>
+          <Link href="/progress" aria-label="Back to progress"><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <div><span>Training record</span><strong>{formatSessionDate(session.endedAt, true)}</strong></div>
         </header>
         <section className={styles.detailLead}>
@@ -38,7 +39,6 @@ export function SessionHistoryDetail({ session, unitSystem }: { session: History
             );
           })}
         </section>
-        <Link className={styles.backAction} href="/progress">Back to progress <span>→</span></Link>
       </section>
     </main>
   );
@@ -50,7 +50,7 @@ export function ExerciseHistoryDetail({ timeline, unitSystem }: { timeline: Exer
     <main className={styles.page}>
       <section className={styles.detailShell}>
         <header className={styles.lightDetailHeader}>
-          <Link href="/progress" aria-label="Back to progress">←</Link>
+          <Link href="/progress" aria-label="Back to progress"><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <span>Exercise history</span>
         </header>
         <section className={styles.exerciseLead}>
@@ -73,7 +73,6 @@ export function ExerciseHistoryDetail({ timeline, unitSystem }: { timeline: Exer
             </Link>
           ))}
         </section>
-        <Link className={styles.lightBackAction} href="/progress">All progress <span>→</span></Link>
       </section>
     </main>
   );

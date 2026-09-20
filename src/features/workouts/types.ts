@@ -5,8 +5,13 @@ export type ExerciseTrackingType =
 
 export type ExerciseCatalogItem = {
   id: string;
+  isArchived?: boolean;
   isCustom: boolean;
   name: string;
+  primaryMuscle?: {
+    name: string;
+    slug: string;
+  };
   trackingType: ExerciseTrackingType;
 };
 

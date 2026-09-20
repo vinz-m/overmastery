@@ -1,19 +1,69 @@
 @import "tailwindcss";
 :root {
   color-scheme: light;
+  --brand-o: #506aa3;
+  --brand-m: #246b70;
   --background: #f6f8fb;
   --foreground: #293449;
   --surface: #ffffff;
   --surface-soft: #eef2f8;
   --border: #dfe5ed;
   --control-border: #7f8da1;
-  --muted: #657187;
-  --accent: #506aa3;
+  --muted: #5f6b80;
+  --accent: var(--brand-o);
   --accent-hover: #405b94;
   --accent-soft: #eaf0fc;
-  --positive: #28715e;
+  --on-accent: #ffffff;
+  --positive: var(--brand-m);
+  --positive-soft: #edf5f1;
+  --category-custom: #785887;
+  --category-custom-soft: #f4eef7;
   --negative: #a34d45;
+  --negative-soft: #fbefed;
+  --nav-surface: #ffffffed;
+  --header-surface: #f6f8fbeb;
+  --shadow: #29344912;
+  --shadow-soft: #2934490a;
+  --overlay: #18203466;
+  --sheet-surface: #f8fafc;
+  --grabber: #c6ceda;
+  --selection-background: #dce6fb;
+  --selection-foreground: #293449;
+  --motion-feedback-duration: 180ms;
+  --motion-feedback-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --font-display: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-o: #e3f0ff;
+  --brand-m: #8bd8bd;
+  --background: #0d121c;
+  --foreground: #eef2f8;
+  --surface: #151c28;
+  --surface-soft: #1d2635;
+  --border: #2c384a;
+  --control-border: #60718a;
+  --muted: #a7b2c3;
+  --accent: #9fb6ff;
+  --accent-hover: #b5c7ff;
+  --accent-soft: #253450;
+  --on-accent: #101725;
+  --positive: var(--brand-m);
+  --positive-soft: #17352e;
+  --category-custom: #d5addf;
+  --category-custom-soft: #372a3d;
+  --negative: #ff9c91;
+  --negative-soft: #402522;
+  --nav-surface: #151c28ed;
+  --header-surface: #0d121ceb;
+  --shadow: #0000005c;
+  --shadow-soft: #00000038;
+  --overlay: #050810b3;
+  --sheet-surface: #151c28;
+  --grabber: #526077;
+  --selection-background: #31456c;
+  --selection-foreground: #eef2f8;
 }
 @theme inline {
   --color-background: var(--background);
@@ -23,11 +73,18 @@
 }
 * { box-sizing: border-box; }
 html { min-height: 100%; background: var(--background); }
-body { min-height: 100%; margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), sans-serif; }
+body { min-height: 100%; margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), sans-serif; transition: background-color var(--motion-feedback-duration) var(--motion-feedback-ease), color var(--motion-feedback-duration) var(--motion-feedback-ease); }
 button, input, select, textarea { font: inherit; }
 button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
-::selection { background: #dce6fb; color: #293449; }
+::selection { background: var(--selection-background); color: var(--selection-foreground); }
+@media (hover: hover) {
+  :where(a, button, summary) {
+    transition-duration: var(--motion-feedback-duration);
+    transition-property: background-color, border-color, box-shadow, color;
+    transition-timing-function: var(--motion-feedback-ease);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }

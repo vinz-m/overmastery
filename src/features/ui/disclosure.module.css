@@ -1,0 +1,35 @@
+.summary {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.summary > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--muted);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.collapsible {
+  overflow: hidden;
+}
+
+.collapsible[data-overflow="visible"] {
+  overflow: visible;
+}

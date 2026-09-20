@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { emptyGuidanceState } from "@/features/guidance/model";
 import { requireUser } from "@/lib/auth/session";
@@ -76,10 +77,7 @@ export async function resetGuidance(
   if (updateError) return { message: "Guidance could not be reset." };
 
   revalidatePath("/", "layout");
-  return {
-    message: "Guidance reset. Tips will appear again at the relevant steps.",
-    success: true,
-  };
+  redirect("/");
 }
 
 export async function changePassword(

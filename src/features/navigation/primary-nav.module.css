@@ -1,11 +1,7 @@
-.nav { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; z-index: 30; width: min(calc(100% - 32px), 580px); display: flex; padding: 7px; transform: translateX(-50%); border: 1px solid var(--border); border-radius: 22px; background: #ffffffed; box-shadow: 0 8px 36px #29344912; backdrop-filter: blur(18px); }
-.nav > a { flex: 1; min-width: 0; min-height: 58px; display: grid; place-items: center; align-content: center; gap: 5px; border-radius: 15px; color: var(--muted); text-decoration: none; }
-.nav svg { width: 21px; height: 21px; }
-.nav small { font-size: 11px; font-weight: 500; }
-.nav .activeNav { color: var(--accent); background: var(--accent-soft); }
-.nav .trainNav { color: var(--accent); }
-@media (hover: hover) { .nav a:hover { background: var(--surface-soft); } }
-.planningSwitch { display: flex; gap: 4px; margin: 0 28px; padding: 5px; width: fit-content; max-width: calc(100% - 56px); border-radius: 13px; background: var(--surface-soft); }
-.planningSwitch a { min-width: 0; padding: 11px 18px; border-radius: 9px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; }
-.planningSwitch .currentPlanningView { background: var(--surface); color: var(--foreground); box-shadow: 0 2px 5px #29344908; }
-@media (max-width: 600px) { .planningSwitch { margin-inline: 20px; max-width: calc(100% - 40px); } .planningSwitch a { padding-inline: 13px; } }
+.nav { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; z-index: 30; width: min(calc(100% - 32px), 580px); display: flex; gap: 4px; padding: 7px; transform: translateX(-50%); border: 1px solid var(--border); border-radius: 22px; background: var(--nav-surface); box-shadow: 0 8px 36px var(--shadow); backdrop-filter: blur(18px); }
+.nav > a { position: relative; flex: 1; min-width: 0; min-height: 58px; display: grid; place-items: center; align-content: center; gap: 5px; border-radius: 15px; color: var(--muted); text-decoration: none; transition: background-color var(--motion-feedback-duration) var(--motion-feedback-ease), color var(--motion-feedback-duration) var(--motion-feedback-ease); }
+.nav svg { position: relative; z-index: 1; width: 21px; height: 21px; }
+.nav small { position: relative; z-index: 1; font-size: 11px; font-weight: 500; }
+.nav .activeNav { color: var(--accent); }
+.activeIndicator { position: absolute; inset: 0; border-radius: 15px; background: var(--accent-soft); }
+@media (hover: hover) { .nav a:not(.activeNav):hover { background: var(--surface-soft); } }

@@ -12,15 +12,21 @@
 .search > span { color: var(--accent); font: 800 19px var(--font-geist-mono); }
 .search input { min-width: 0; border: 0; outline: 0; background: transparent; color: var(--foreground); font-size: 14px; }
 .search:focus-within { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.sourceFilters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; padding: 4px; border-radius: 12px; background: var(--surface-soft); }
+.sourceFilters button { position: relative; min-width: 0; min-height: 44px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.sourceFilters button[aria-pressed="true"] { color: var(--foreground); }
+.sourceFilterIndicator { position: absolute; inset: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); box-shadow: 0 2px 8px var(--shadow-soft); }
+.sourceFilterLabel { position: relative; z-index: 1; }
 .createExercise { margin-top: 9px; border: 1px solid var(--border); background: var(--surface-soft); }
-.createExercise summary { min-height: 47px; display: flex; align-items: center; padding: 0 14px; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; list-style: none; }
-.createExercise summary::marker, .createExercise summary::-webkit-details-marker { content: ""; display: none; }
+.createExercise > button { min-height: 47px; padding-inline: 14px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.createExerciseContent { border-top: 1px solid var(--border); background: var(--surface); }
 .createExercise form { display: grid; gap: 9px; padding: 14px; border-top: 1px solid var(--border); background: var(--surface); }
-.createExercise label { display: grid; gap: 5px; }
-.createExercise label span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
-.createExercise input, .createExercise select { min-height: 43px; padding: 0 10px; border: 1px solid var(--control-border); background: var(--surface); color: var(--foreground); }
-.createExercise button { min-height: 46px; border: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
-.createExercise button:disabled { opacity: .45; }
+.createExercise form { border-top: 0; }
+.createExercise label, .fieldGroup { display: grid; gap: 5px; }
+.createExercise label span, .fieldGroup > span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+.createExercise label > input { min-height: 48px; padding: 0 10px; border: 1px solid var(--control-border); background: var(--surface); color: var(--foreground); }
+.createExercise form > button { min-height: 46px; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer; }
+.createExercise form > button:disabled { opacity: .45; }
 .createExercise p { color: var(--accent); font-size: 11px; }
 .catalog { margin: 0 12px; }
 .catalog > header { display: flex; align-items: end; justify-content: space-between; gap: 15px; margin-bottom: 11px; padding: 0 7px; }
@@ -28,7 +34,15 @@
 .catalog > header span { color: var(--muted); font: 650 11px var(--font-geist-sans); letter-spacing: .1em; text-transform: uppercase; }
 .catalog > header h2 { margin: 0; font-size: 13px; }
 .catalog > header small { max-width: 160px; color: var(--muted); font-size: 12px; text-align: right; }
-.exerciseList { border: 1px solid var(--border); background: var(--surface); }
+.exerciseList { position: relative; display: grid; gap: 10px; }
+.exerciseGroup { overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.exerciseGroupHeader { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 16px; border: 0; background: transparent; color: var(--foreground); text-align: left; cursor: pointer; }
+.exerciseGroupHeader > span { display: grid; gap: 4px; }
+.exerciseGroupHeader strong { font-size: 15px; }
+.exerciseGroupHeader small { color: var(--muted); font-size: 12px; }
+.exerciseGroupHeader svg { width: 20px; height: 20px; flex: none; color: var(--accent); }
+.exerciseGroupHeader:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.groupItems { border-top: 1px solid var(--border); }
 .exerciseList article { min-height: 67px; display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 9px; padding: 9px 13px; border-bottom: 1px solid var(--border); }
 .exerciseList article:last-child { border-bottom: 0; }
 .exerciseList article > span { color: var(--muted); font: 650 11px var(--font-geist-sans); }
@@ -36,7 +50,36 @@
 .exerciseList article strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .exerciseList article small { color: var(--muted); font-size: 12px; }
 .exerciseList article b { color: var(--accent); font: 700 11px var(--font-geist-sans); letter-spacing: .08em; text-transform: uppercase; }
+.exerciseList article .libraryTag { color: var(--muted); background: var(--surface-soft); }
+.exerciseList article .customTag { color: var(--category-custom); background: var(--category-custom-soft); }
+.exerciseList article .archivedTag { color: var(--muted); background: var(--surface-soft); }
+.exerciseList article.customCatalogItem { display: block; padding: 0; }
+.customSummary { min-height: 68px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; }
+.customSummary > div:first-child { min-width: 0; display: grid; gap: 5px; }
+.customSummaryActions { display: flex; align-items: center; gap: 6px; }
+.customSummaryActions > button { min-width: 44px; min-height: 40px; padding: 0 8px; border: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: 650; cursor: pointer; }
+.customSummaryActions > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.customEditor { display: grid; gap: 0; border-top: 1px solid var(--border); background: var(--surface-soft); }
+.customEditor > form, .customEditor > .archiveExercise { display: grid; gap: 10px; padding: 16px; }
+.customEditor label { display: grid; gap: 6px; }
+.customEditor label > span, .customEditor .fieldGroup > span { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.customEditor input { min-height: 46px; padding: 0 11px; border: 1px solid var(--control-border); border-radius: 9px; background: var(--surface); color: var(--foreground); font-size: 16px; }
+.customEditor input[aria-invalid="true"] { border-color: var(--negative); }
+.customEditor form:first-child > button { min-height: 46px; border: 0; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-weight: 650; cursor: pointer; }
+.customEditor button:disabled { cursor: progress; opacity: .55; }
+.customEditor p { color: var(--negative); font-size: 12px; line-height: 1.45; }
+.customEditor p:empty { display: none; }
+.customEditor .archiveExercise { border-top: 1px solid var(--border); }
+.archiveExercise > button { min-height: 44px; border: 1px solid var(--accent); border-radius: 9px; background: transparent; color: var(--accent); font-weight: 650; cursor: pointer; }
+.archiveExercise > small { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.archivedCatalogItem { background: color-mix(in srgb, var(--surface) 72%, var(--surface-soft)); }
+.archivedCatalogItem .customSummaryActions form { margin: 0; }
+.archivedCatalogItem .customSummaryActions button { min-width: 58px; min-height: 40px; padding: 0 8px; border: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: 650; cursor: pointer; }
+.archivedCatalogItem .customSummaryActions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.archivedCatalogItem .customSummaryActions button:disabled { cursor: progress; opacity: .55; }
+.restoreError { margin: 0; padding: 0 16px 14px; color: var(--negative); font-size: 12px; line-height: 1.45; }
 .noResults { padding: 28px 18px; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
+@media (hover: hover) { .sourceFilters button:not([aria-pressed="true"]):hover { color: var(--foreground); } }
 @media (min-width: 700px) { .page { padding-top: 32px; } .shell { --content-gutter: 28px; min-height: calc(100dvh - 32px); } }
 
 /* Shared page rhythm; component rules above describe each screen's content. */
@@ -49,16 +92,26 @@
 @media (max-width: 600px) { .lead { padding: 28px 20px; } }
 
 .controls, .catalog { margin-inline: 28px; }
-.search, .createExercise { border-radius: 12px; overflow: hidden; }
+.search, .createExercise { border-radius: 12px; }
+.search { overflow: hidden; }
 .search input { min-height: 50px; font-size: 16px; }
-.createExercise { margin-top: 16px; background: var(--surface); }
-.createExercise summary { min-height: 52px; font-size: 13px; color: var(--accent); }
+.createExercise { margin-top: 10px; background: var(--surface); }
+.createExercise > button { min-height: 52px; font-size: 13px; color: var(--accent); }
 .createExercise form { padding: 20px; gap: 16px; }
-.createExercise input, .createExercise select, .createExercise button { border-radius: 9px; min-height: 48px; }
-.exerciseList { border-radius: 16px; overflow: hidden; background: var(--surface); }
+.createExercise label > input, .createExercise form > button { border-radius: 9px; min-height: 48px; }
 .exerciseList article { grid-template-columns: minmax(0, 1fr) auto; padding: 18px 22px; gap: 14px; }
 .exerciseList article > span { display: none; }
 .exerciseList article strong { font-size: 15px; white-space: normal; }
-.exerciseList article b { font-size: 10px; background: var(--surface-soft); padding: 6px 8px; border-radius: 7px; }
+.exerciseList article b { font-size: 10px; padding: 6px 8px; border-radius: 7px; }
 .catalog > header { margin-bottom: 16px; }
 @media (max-width: 600px) { .controls, .catalog { margin-inline: 20px; } }
+
+.shell { width: min(100%, 430px); }
+.lead { padding: 24px 20px 22px; }
+.lead h1 { margin: 0 0 8px; font-size: 36px; font-weight: 600; }
+.lead p { margin-bottom: 7px; }
+.lead span { font-size: 14px; line-height: 1.5; }
+.controls, .catalog { margin-inline: 20px; }
+.controls { margin-bottom: 26px; }
+.catalog > header small { display: none; }
+.exerciseList article { min-height: 68px; padding: 14px 16px; }

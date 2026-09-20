@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 
 import {
   signIn,
@@ -22,9 +23,29 @@ export function AuthForm({
   const action = mode === "login" ? signIn : signUp;
   const [state, formAction, pending] = useActionState(action, initialState);
   const isLogin = mode === "login";
+  const formRef = useRef<HTMLFormElement>(null);
+  const actionError = state.success ? undefined : state.message;
+  const successMessage = state.success ? state.message : undefined;
+
+  useEffect(() => {
+    const firstInvalidField = ["displayName", "email", "password"].find(
+      (fieldName) => state.fieldErrors?.[fieldName as keyof NonNullable<AuthActionState["fieldErrors"]>],
+    );
+
+    if (!firstInvalidField) return;
+    formRef.current
+      ?.querySelector<HTMLInputElement>(`[name="${firstInvalidField}"]`)
+      ?.focus();
+  }, [state.fieldErrors]);
 
   return (
-    <form className={styles.form} action={formAction} noValidate>
+    <form
+      action={formAction}
+      aria-busy={pending}
+      className={styles.form}
+      noValidate
+      ref={formRef}
+    >
       {notice && (
         <p className={styles.error} role="alert">
           {notice}
@@ -35,8 +56,11 @@ export function AuthForm({
           autoComplete="name"
           error={state.fieldErrors?.displayName}
           label="Name"
+          maxLength={80}
+          minLength={2}
           name="displayName"
           placeholder="What should we call you?"
+          required
           type="text"
         />
       )}
@@ -45,8 +69,10 @@ export function AuthForm({
         autoComplete="email"
         error={state.fieldErrors?.email}
         label="Email"
+        maxLength={254}
         name="email"
         placeholder="you@example.com"
+        required
         type="email"
       />
 
@@ -55,23 +81,39 @@ export function AuthForm({
         error={state.fieldErrors?.password}
         hint={isLogin ? undefined : "8 characters minimum"}
         label="Password"
+        minLength={8}
         name="password"
         placeholder="••••••••"
+        required
         type="password"
       />
 
-      {state.message && (
-        <p
-          className={state.success ? styles.success : styles.error}
-          role={state.success ? "status" : "alert"}
-        >
-          {state.message}
-        </p>
-      )}
+      <p
+        aria-atomic="true"
+        className={actionError ? styles.error : styles.liveRegion}
+        role="alert"
+      >
+        {actionError ?? ""}
+      </p>
+      <p
+        aria-atomic="true"
+        className={successMessage ? styles.success : styles.liveRegion}
+        role="status"
+      >
+        {successMessage ?? ""}
+      </p>
 
       <button className={styles.submit} disabled={pending} type="submit">
-        <span>{pending ? "Working…" : isLogin ? "Sign in" : "Create account"}</span>
-        <span aria-hidden="true">→</span>
+        <span>
+          {pending
+            ? isLogin
+              ? "Signing in…"
+              : "Creating account…"
+            : isLogin
+              ? "Sign in"
+              : "Create account"}
+        </span>
+        <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
       </button>
 
       <p className={styles.switchMode}>
@@ -89,8 +131,11 @@ type FieldProps = {
   error?: string;
   hint?: string;
   label: string;
+  maxLength?: number;
+  minLength?: number;
   name: string;
   placeholder: string;
+  required?: boolean;
   type: "email" | "password" | "text";
 };
 
@@ -99,24 +144,39 @@ function Field({
   error,
   hint,
   label,
+  maxLength,
+  minLength,
   name,
   placeholder,
+  required,
   type,
 }: FieldProps) {
-  const errorId = `${name}-error`;
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
+  const describedBy = [hint ? hintId : undefined, error ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   return (
-    <label className={styles.field}>
-      <span className={styles.fieldLabel}>
-        <span>{label}</span>
-        {hint && <small>{hint}</small>}
-      </span>
+    <div className={styles.field}>
+      <div className={styles.fieldLabel}>
+        <label htmlFor={inputId}>{label}</label>
+        {hint && <small id={hintId}>{hint}</small>}
+      </div>
       <input
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={describedBy}
         aria-invalid={Boolean(error)}
         autoComplete={autoComplete}
+        autoCapitalize={type === "text" ? "words" : "none"}
+        id={inputId}
+        inputMode={type === "email" ? "email" : undefined}
+        maxLength={maxLength}
+        minLength={minLength}
         name={name}
         placeholder={placeholder}
+        required={required}
+        spellCheck={type === "text"}
         type={type}
       />
       {error && (
@@ -124,6 +184,6 @@ function Field({
           {error}
         </span>
       )}
-    </label>
+    </div>
   );
 }

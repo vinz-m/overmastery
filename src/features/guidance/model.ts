@@ -1,5 +1,8 @@
 export const guidanceKeys = [
-  "home.create-workout.v1",
+  "home.overview.v1",
+  "workouts.overview.v1",
+  "progress.overview.v1",
+  "profile.overview.v1",
   "workout-builder.add-exercise.v1",
   "workout-builder.configure-exercise.v1",
   "workout-builder.save-workout.v1",

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="theme-color"
+      content="#f6f8fb"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0d121c"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Offline · Overmastery</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --background: #0d121c;
+        --text: #e3f0ff;
+        --muted: #a7b4c7;
+        --accent: #8bd8bd;
+        --accent-text: #10231e;
+        --border: #29364a;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --background: #f6f8fb;
+          --text: #162033;
+          --muted: #59677b;
+          --accent: #246b70;
+          --accent-text: #ffffff;
+          --border: #d5dce7;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100dvh;
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(100% - 2rem, 28rem);
+        min-height: 100dvh;
+        margin-inline: auto;
+        display: grid;
+        align-content: center;
+        padding-block: 3rem;
+      }
+
+      .mark {
+        margin: 0 0 2.5rem;
+        font-size: 2.25rem;
+        font-weight: 780;
+        letter-spacing: -0.12em;
+        line-height: 1;
+      }
+
+      .mark span:last-child {
+        color: var(--accent);
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+        color: var(--muted);
+        font-size: 0.8125rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .status::before {
+        width: 0.55rem;
+        height: 0.55rem;
+        border: 2px solid var(--accent);
+        border-radius: 50%;
+        content: "";
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 11ch;
+        font-size: clamp(2.25rem, 11vw, 3.5rem);
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      p {
+        margin: 1.25rem 0 0;
+        max-width: 35ch;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      a {
+        display: inline-flex;
+        min-height: 3rem;
+        margin-top: 2rem;
+        align-items: center;
+        justify-content: center;
+        justify-self: start;
+        padding-inline: 1.25rem;
+        border: 1px solid var(--accent);
+        border-radius: 0.85rem;
+        background: var(--accent);
+        color: var(--accent-text);
+        font-weight: 720;
+        text-decoration: none;
+        transition:
+          transform 160ms ease,
+          filter 160ms ease;
+      }
+
+      a:hover {
+        filter: brightness(1.05);
+        transform: translateY(-1px);
+      }
+
+      a:focus-visible {
+        outline: 3px solid var(--text);
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        a {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-label="Overmastery"><span>o</span><span>m</span></div>
+      <div class="status">Connection paused</div>
+      <h1>You’re offline.</h1>
+      <p>
+        Overmastery can’t reach the network right now. Your training data hasn’t
+        changed—reconnect, then try again.
+      </p>
+      <a href="">Try again</a>
+    </main>
+  </body>
+</html>

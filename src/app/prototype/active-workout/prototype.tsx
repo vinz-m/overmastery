@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./prototype.module.css";
 
-// Three variants of the active workout, switchable via ?variant=, on /prototype/active-workout.
-type Key = "A" | "B" | "C";
+// Four variants of the active workout, switchable via ?variant=, on /prototype/active-workout.
+type Key = "A" | "B" | "C" | "D";
 type Entry = { weight: string; reps: string; complete: boolean };
 type Actions = {
   sets: Entry[];
@@ -20,6 +20,7 @@ const variants: { key: Key; name: string }[] = [
   { key: "A", name: "Performance ledger" },
   { key: "B", name: "One-set focus" },
   { key: "C", name: "Compact console" },
+  { key: "D", name: "Focused set + exercise sheet" },
 ];
 const seed: Entry[] = [
   { weight: "80", reps: "8", complete: true },
@@ -33,7 +34,7 @@ export function ActiveWorkoutPrototype() {
   const router = useRouter();
   const pathname = usePathname();
   const requested = params.get("variant")?.toUpperCase();
-  const variant: Key = requested === "B" || requested === "C" ? requested : "A";
+  const variant: Key = requested === "B" || requested === "C" || requested === "D" ? requested : "A";
   const [sets, setSets] = useState(seed);
   const [finished, setFinished] = useState(false);
 
@@ -70,12 +71,119 @@ export function ActiveWorkoutPrototype() {
     {variant === "A" && <Ledger actions={actions} />}
     {variant === "B" && <Focus actions={actions} />}
     {variant === "C" && <Console actions={actions} />}
+    {variant === "D" && <FocusedSheet actions={actions} />}
     {process.env.NODE_ENV !== "production" && <nav className={styles.switcher} aria-label="Prototype variants">
       <button onClick={() => cycle(-1)} aria-label="Previous variant">←</button>
       <span>{variant} · {variants.find((item) => item.key === variant)?.name}</span>
       <button onClick={() => cycle(1)} aria-label="Next variant">→</button>
     </nav>}
   </main>;
+}
+
+const workoutExercises = [
+  { name: "Bench Press", sets: 3, status: "current" },
+  { name: "Chest-supported Row", sets: 3, status: "upcoming" },
+  { name: "Incline Dumbbell Press", sets: 3, status: "upcoming" },
+  { name: "Lat Pulldown", sets: 3, status: "upcoming" },
+  { name: "Face Pulls", sets: 3, status: "skipped" },
+  { name: "Triceps Pushdown", sets: 2, status: "upcoming" },
+] as const;
+
+function FocusedSheet({ actions }: { actions: Actions }) {
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const exercise = workoutExercises[exerciseIndex];
+  const openSet = actions.sets.findIndex((set) => !set.complete);
+  const setIndex = openSet < 0 ? actions.sets.length - 1 : openSet;
+  const currentSet = actions.sets[setIndex];
+  const completedCount = actions.sets.filter((set) => set.complete).length;
+  const nextExercise = workoutExercises[(exerciseIndex + 1) % workoutExercises.length];
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    closeRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSheetOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [sheetOpen]);
+
+  const closeSheet = () => {
+    setSheetOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  const chooseExercise = (index: number) => {
+    setExerciseIndex(index);
+    closeSheet();
+  };
+
+  return <section className={`${styles.phone} ${styles.focusedSheet}`}>
+    <header className={styles.focusedTop}>
+      <button aria-label="Close workout">‹</button>
+      <div><b>Upper A</b><span>18:42</span></div>
+      <button onClick={actions.finish}>Finish</button>
+    </header>
+
+    <div className={styles.focusedBody}>
+      <button
+        className={styles.exercisePicker}
+        onClick={() => setSheetOpen(true)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span>Exercise {exerciseIndex + 1} of {workoutExercises.length}</span>
+        <strong>{exercise.name}</strong>
+        <i aria-hidden="true">⌄</i>
+      </button>
+
+      <section className={styles.setFocus}>
+        <div className={styles.setHeading}>
+          <div><span>Current set</span><strong>Set {setIndex + 1} of {actions.sets.length}</strong></div>
+          <small>{completedCount} completed</small>
+        </div>
+        <p className={styles.previousSet}>Previous: <b>80 kg × {previous[setIndex] ?? 8} reps</b></p>
+        <div className={styles.focusedInputs}>
+          <label><span>Weight</span><div><input aria-label="Weight" inputMode="decimal" value={currentSet.weight} onChange={(event) => actions.update(setIndex, "weight", event.target.value)} /><small>kg</small></div></label>
+          <label><span>Reps</span><input aria-label="Reps" inputMode="numeric" placeholder="0" value={currentSet.reps} onChange={(event) => actions.update(setIndex, "reps", event.target.value)} /></label>
+        </div>
+        <button className={styles.completeFocused} onClick={() => actions.toggle(setIndex)} type="button">
+          {currentSet.complete ? "Reopen set" : "Complete set"}
+        </button>
+      </section>
+
+      <div className={styles.setProgress} aria-label={`${completedCount} of ${actions.sets.length} sets completed`}>
+        {actions.sets.map((set, index) => <span className={set.complete ? styles.setProgressDone : index === setIndex ? styles.setProgressCurrent : ""} key={index}>{set.complete ? "✓" : index + 1}</span>)}
+      </div>
+
+      <button className={styles.continueExercise} onClick={() => setExerciseIndex((current) => (current + 1) % workoutExercises.length)} type="button">
+        <span>Up next</span><strong>{nextExercise.name}</strong><i aria-hidden="true">›</i>
+      </button>
+    </div>
+
+    {sheetOpen && <div className={styles.sheetLayer}>
+      <button className={styles.scrim} aria-label="Close exercise list" onClick={closeSheet} />
+      <section aria-labelledby="exercise-sheet-title" aria-modal="true" className={styles.exerciseSheet} role="dialog">
+        <div className={styles.sheetGrabber} aria-hidden="true" />
+        <header><h2 id="exercise-sheet-title">Exercises</h2><button onClick={closeSheet} ref={closeRef}>Done</button></header>
+        <div className={styles.sheetList}>
+          {workoutExercises.map((item, index) => {
+            const isCurrent = index === exerciseIndex;
+            const isComplete = index < exerciseIndex;
+            return <button className={isCurrent ? styles.sheetCurrent : ""} key={item.name} onClick={() => chooseExercise(index)} type="button">
+              <span className={styles.sheetStatus} aria-hidden="true">{isComplete ? "✓" : item.status === "skipped" ? "—" : isCurrent ? "●" : ""}</span>
+              <span><strong>{item.name}</strong>{isCurrent && <small>Current exercise</small>}</span>
+              <b>{isComplete ? `${item.sets}/${item.sets}` : item.status === "skipped" ? "Skipped" : isCurrent ? `${completedCount}/${actions.sets.length}` : `0/${item.sets}`}</b>
+            </button>;
+          })}
+        </div>
+        <button className={styles.addToday} type="button">＋ Add exercise for today</button>
+      </section>
+    </div>}
+  </section>;
 }
 
 function Row({ set, index, actions, compact = false }: { set: Entry; index: number; actions: Actions; compact?: boolean }) {

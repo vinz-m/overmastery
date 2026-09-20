@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 
 import styles from "./auth.module.css";
 
@@ -27,13 +28,13 @@ export function AuthShell({ children, eyebrow, title, copy }: AuthShellProps) {
                 <strong>80</strong>
                 <small>kg · 8 / 8 / 7</small>
               </div>
-              <i>→</i>
+              <i><ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></i>
               <div>
                 <span>Today</span>
                 <strong>80</strong>
                 <small>kg · 8 / 8 / 8</small>
               </div>
-              <i>→</i>
+              <i><ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></i>
               <div className={styles.nextMark}>
                 <span>Next</span>
                 <strong>82.5</strong>
