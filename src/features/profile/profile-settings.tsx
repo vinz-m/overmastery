@@ -10,7 +10,6 @@ import {
 } from "@phosphor-icons/react";
 
 import { signOut } from "@/features/auth/actions";
-import { PrimaryNav } from "@/features/navigation/primary-nav";
 import {
   useTheme,
   type ThemePreference,
@@ -26,8 +25,6 @@ import {
   updateProfile,
   type ProfileActionState,
 } from "./actions";
-import { AppHeader } from "@/features/navigation/app-header";
-
 import styles from "./profile.module.css";
 
 const initialState: ProfileActionState = {};
@@ -37,8 +34,6 @@ const unitOptions = [
 ];
 
 export function ProfileSettings({
-  dayEndsAt,
-  activeSessionId,
   createdAt,
   displayName,
   email,
@@ -47,8 +42,6 @@ export function ProfileSettings({
   timeZones,
   unitSystem,
 }: {
-  dayEndsAt: string;
-  activeSessionId?: string;
   createdAt?: string;
   displayName: string;
   email: string;
@@ -62,10 +55,7 @@ export function ProfileSettings({
   const [passwordState, passwordAction, passwordPending] = useActionState(changePassword, initialState);
 
   return (
-    <main className={styles.page}>
-      <section className={styles.shell}>
-        <AppHeader accountLabel={displayName} />
-
+    <main className={styles.tabContent}>
         <section className={styles.lead}>
           <p>Profile</p>
           <h1>Profile</h1>
@@ -143,8 +133,6 @@ export function ProfileSettings({
           <form action={signOut}><button type="submit">Sign out</button></form>
         </section>
 
-        <PrimaryNav active="profile" activeSessionId={activeSessionId} dayEndsAt={dayEndsAt} />
-      </section>
     </main>
   );
 }

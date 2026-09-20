@@ -1,5 +1,6 @@
 .page { min-height: 100dvh; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans); }
 .shell { --content-gutter: 28px; position: relative; width: min(100%, 860px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(102px + env(safe-area-inset-bottom)); background: var(--surface-soft); box-shadow: none; }
+.tabContent { min-width: 0; }
 .header { display: flex; align-items: center; justify-content: space-between; padding: 24px 20px; }
 .header > strong { font-size: 12px; letter-spacing: .16em; }
 .header > span { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--muted); font: 700 11px var(--font-geist-mono); }

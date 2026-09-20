@@ -1,26 +1,24 @@
-import {
-  WorkoutHome,
-} from "@/features/workouts/home";
 import { getWorkoutOverview } from "@/features/workouts/data";
+import { WorkoutHome } from "@/features/workouts/home";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
-  const user = await requireUser();
   const supabase = await createClient();
-  const { activeSession, lastTrainedAt, workouts } =
-    await getWorkoutOverview(supabase);
+  const [user, overview] = await Promise.all([
+    requireUser(),
+    getWorkoutOverview(supabase),
+  ]);
 
   return (
     <WorkoutHome
-      dayEndsAt={user.dayEndsAt}
-      activeSession={activeSession}
+      activeSession={overview.activeSession}
       displayName={user.displayName}
       email={user.email}
       guidance={user.guidance}
-      lastTrainedAt={lastTrainedAt}
+      lastTrainedAt={overview.lastTrainedAt}
       timeZone={user.timeZone}
-      workouts={workouts}
+      workouts={overview.workouts}
     />
   );
 }

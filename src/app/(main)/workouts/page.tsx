@@ -12,20 +12,19 @@ export default async function WorkoutsPage({
 }: {
   searchParams: Promise<{ view?: string | string[] }>;
 }) {
-  const user = await requireUser();
   const supabase = await createClient();
-  const [{ activeSession, workouts }, catalog, archivedCatalog] = await Promise.all([
-    getWorkoutOverview(supabase),
+  const overviewPromise = getWorkoutOverview(supabase);
+  const [user, params] = await Promise.all([requireUser(), searchParams]);
+  const [overview, catalog, archivedCatalog] = await Promise.all([
+    overviewPromise,
     getExerciseCatalog(supabase, user.id),
     getArchivedCustomExercises(supabase, user.id),
   ]);
-  const planningView =
-    (await searchParams).view === "exercises" ? "exercises" : "workouts";
+  const planningView = params.view === "exercises" ? "exercises" : "workouts";
 
   return (
     <WorkoutHome
-      dayEndsAt={user.dayEndsAt}
-      activeSession={activeSession}
+      activeSession={overview.activeSession}
       archivedCatalog={archivedCatalog}
       catalog={catalog}
       displayName={user.displayName}
@@ -34,7 +33,7 @@ export default async function WorkoutsPage({
       planningView={planningView}
       timeZone={user.timeZone}
       view="workouts"
-      workouts={workouts}
+      workouts={overview.workouts}
     />
   );
 }

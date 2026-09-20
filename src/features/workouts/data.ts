@@ -10,7 +10,20 @@ import { latestTrainingDate } from "./workout-overview";
 
 type Client = SupabaseClient<Database>;
 
-export async function getExerciseCatalog(supabase: Client, userId: string) {
+const supportedTrackingTypes = [
+  "weight_reps",
+  "bodyweight_reps",
+  "added_weight_reps",
+  "assistance_reps",
+] as const;
+const globalExerciseCacheTtlMs = 60 * 60 * 1000;
+
+type CatalogRows = Awaited<ReturnType<typeof fetchGlobalExercises>>;
+let globalExerciseCache:
+  | { expiresAt: number; rows: CatalogRows }
+  | undefined;
+
+async function fetchGlobalExercises(supabase: Client) {
   const { data, error } = await supabase
     .from("exercises")
     .select(`
@@ -25,17 +38,58 @@ export async function getExerciseCatalog(supabase: Client, userId: string) {
       )
     `)
     .is("archived_at", null)
-    .in("tracking_type", [
-      "weight_reps",
-      "bodyweight_reps",
-      "added_weight_reps",
-      "assistance_reps",
-    ])
+    .is("owner_user_id", null)
+    .in("tracking_type", supportedTrackingTypes)
     .order("name");
 
   if (error) throw new Error("Exercise library could not be loaded.");
+  return data ?? [];
+}
 
-  return (data ?? []).map((exercise) => {
+async function fetchCustomExercises(supabase: Client, userId: string) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .select(`
+      id,
+      name,
+      owner_user_id,
+      tracking_type,
+      exercise_muscles (
+        position,
+        role,
+        muscle_groups ( name, slug )
+      )
+    `)
+    .is("archived_at", null)
+    .eq("owner_user_id", userId)
+    .in("tracking_type", supportedTrackingTypes)
+    .order("name");
+
+  if (error) throw new Error("Exercise library could not be loaded.");
+  return data ?? [];
+}
+
+async function getGlobalExercises(supabase: Client) {
+  const now = Date.now();
+  if (globalExerciseCache && globalExerciseCache.expiresAt > now) {
+    return globalExerciseCache.rows;
+  }
+
+  const rows = await fetchGlobalExercises(supabase);
+  globalExerciseCache = {
+    expiresAt: now + globalExerciseCacheTtlMs,
+    rows,
+  };
+  return rows;
+}
+
+export async function getExerciseCatalog(supabase: Client, userId: string) {
+  const [globalExercises, customExercises] = await Promise.all([
+    getGlobalExercises(supabase),
+    fetchCustomExercises(supabase, userId),
+  ]);
+
+  return [...globalExercises, ...customExercises].map((exercise) => {
     const primaryMuscle = [...exercise.exercise_muscles]
       .sort((left, right) => left.position - right.position)
       .find((muscle) => muscle.role === "primary")?.muscle_groups;
@@ -48,7 +102,7 @@ export async function getExerciseCatalog(supabase: Client, userId: string) {
       primaryMuscle: primaryMuscle ?? undefined,
       trackingType: exercise.tracking_type,
     };
-  });
+  }).sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export async function getArchivedCustomExercises(
@@ -60,12 +114,7 @@ export async function getArchivedCustomExercises(
     .select("id, name, tracking_type")
     .eq("owner_user_id", userId)
     .not("archived_at", "is", null)
-    .in("tracking_type", [
-      "weight_reps",
-      "bodyweight_reps",
-      "added_weight_reps",
-      "assistance_reps",
-    ])
+    .in("tracking_type", supportedTrackingTypes)
     .order("archived_at", { ascending: false });
 
   if (error) throw new Error("Archived exercises could not be loaded.");

@@ -1,5 +1,6 @@
 .page { min-height: 100dvh; background: var(--background); color: var(--foreground); }
 .shell { width: min(100%, 430px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+.tabContent { min-width: 0; }
 .todayHeader, .libraryHeader { padding: 24px 20px 20px; }
 .todayHeader p, .libraryHeader p { margin: 0 0 7px; color: var(--muted); font-size: 12px; }
 .todayHeader h1, .libraryHeader h1 { margin: 0; font-family: var(--font-display); font-size: 36px; font-weight: 600; letter-spacing: -.04em; }

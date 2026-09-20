@@ -1,22 +1,23 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { readGuidanceState } from "@/features/guidance/model";
-import { hasVerifiedUser } from "@/lib/auth/session-state";
+import { hasVerifiedClaims } from "@/lib/auth/session-state";
 import { createClient } from "@/lib/supabase/server";
-import { expirePreviousDaySession } from "@/features/sessions/expire-session";
 import { nextSessionDay } from "@/features/sessions/session-day";
 
-export async function requireUser() {
+const loadRequiredUser = async () => {
   const supabase = await createClient();
-  const result = await supabase.auth.getUser();
+  const result = await supabase.auth.getClaims();
 
-  if (!hasVerifiedUser(result)) {
+  if (!hasVerifiedClaims(result)) {
     redirect("/login");
   }
 
-  const subject = result.data.user.id;
+  const claims = result.data.claims;
+  const subject = claims.sub;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -28,28 +29,27 @@ export async function requireUser() {
     throw new Error("Your profile settings could not be loaded.");
   }
 
-  // Every authenticated page and session mutation passes this boundary. Closing
-  // stale sessions here also frees the one-active-session constraint before start.
   const now = new Date();
-  await expirePreviousDaySession(supabase, subject, profile.time_zone, now);
 
   return {
     dayEndsAt: nextSessionDay(now.toISOString(), profile.time_zone),
     id: subject,
     createdAt: profile.created_at,
     displayName: profile.display_name ?? undefined,
-    email: result.data.user.email,
-    guidance: readGuidanceState(result.data.user.user_metadata),
+    email: typeof claims.email === "string" ? claims.email : undefined,
+    guidance: readGuidanceState(claims.user_metadata),
     timeZone: profile.time_zone,
     unitSystem: profile.unit_system,
   };
-}
+};
+
+export const requireUser = cache(loadRequiredUser);
 
 export async function redirectAuthenticatedUser() {
   const supabase = await createClient();
-  const result = await supabase.auth.getUser();
+  const result = await supabase.auth.getClaims();
 
-  if (hasVerifiedUser(result)) {
+  if (hasVerifiedClaims(result)) {
     redirect("/");
   }
 }

@@ -67,30 +67,20 @@ export async function getProgressOverview(
   userId: string,
   unitSystem: UnitSystem,
 ) {
-  const [{ data, error }, { data: activeSession, error: activeError }] =
-    await Promise.all([
-      supabase
-        .from("training_sessions")
-        .select(historySelection)
-        .eq("user_id", userId)
-        .eq("status", "completed")
-        .order("ended_at", { ascending: false })
-        .limit(60),
-      supabase
-        .from("training_sessions")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .maybeSingle(),
-    ]);
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select(historySelection)
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .order("ended_at", { ascending: false })
+    .limit(24);
 
-  if (error || activeError) throw new Error("Training history could not be loaded.");
+  if (error) throw new Error("Training history could not be loaded.");
 
   const sessions = buildHistory((data ?? []) as HistoryRow[], unitSystem);
   const exerciseIndex = buildExerciseIndex(sessions);
 
   return {
-    activeSessionId: activeSession?.id,
     exercises: [...exerciseIndex.values()]
       .sort((left, right) =>
         right.exposures[0].endedAt.localeCompare(left.exposures[0].endedAt),

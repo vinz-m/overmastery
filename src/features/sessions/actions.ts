@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
+import { expirePreviousDaySession } from "./expire-session";
 import type { SessionMutationResult } from "./types";
 import { canAddExtraSet, exerciseStatusAfterSetChange } from "./set-policy";
 
@@ -29,6 +30,7 @@ export async function startWorkout(
 
   const user = await requireUser();
   const supabase = await createClient();
+  await expirePreviousDaySession(supabase, user.id, user.timeZone);
   const { data: existing } = await supabase
     .from("training_sessions")
     .select("id")

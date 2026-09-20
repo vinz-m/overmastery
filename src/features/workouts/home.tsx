@@ -5,8 +5,6 @@ import { ExerciseLibrary } from "@/features/exercises/exercise-library";
 import { beginWorkoutCreation } from "@/features/guidance/actions";
 import { ContextualTip } from "@/features/guidance/contextual-tip";
 import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
-import { AppHeader } from "@/features/navigation/app-header";
-import { PrimaryNav } from "@/features/navigation/primary-nav";
 import {
   formatHomeDate,
   formatHomeTime,
@@ -25,7 +23,6 @@ import styles from "./home.module.css";
 export type HomeWorkout = { exerciseCount: number; firstTarget?: string; id: string; lastTrainedAt?: string; name: string; preview: string[] };
 export type HomeActiveSession = { id: string; startedAt: string; templateName: string };
 type Props = {
-  dayEndsAt: string;
   activeSession?: HomeActiveSession;
   archivedCatalog?: ExerciseCatalogItem[];
   catalog?: ExerciseCatalogItem[];
@@ -39,14 +36,11 @@ type Props = {
   workouts: HomeWorkout[];
 };
 
-export function WorkoutHome({ dayEndsAt, activeSession, archivedCatalog = [], catalog = [], displayName, email, guidance, lastTrainedAt, planningView = "workouts", timeZone, view = "home", workouts }: Props) {
+export function WorkoutHome({ activeSession, archivedCatalog = [], catalog = [], displayName, email, guidance, lastTrainedAt, planningView = "workouts", timeZone, view = "home", workouts }: Props) {
   const accountLabel = displayName || email?.split("@")[0] || "You";
   if (view === "workouts") {
     return (
       <WorkoutPlanningWorkspace
-        accountLabel={accountLabel}
-        activeSessionId={activeSession?.id}
-        dayEndsAt={dayEndsAt}
         defaultView={planningView}
         exerciseLibrary={<ExerciseLibrary archivedCatalog={archivedCatalog} catalog={catalog} />}
         guidance={guidance}
@@ -57,15 +51,14 @@ export function WorkoutHome({ dayEndsAt, activeSession, archivedCatalog = [], ca
     );
   }
 
-  return <Today accountLabel={accountLabel} activeSession={activeSession} dayEndsAt={dayEndsAt} guidance={guidance} lastTrainedAt={lastTrainedAt} timeZone={timeZone} workouts={workouts} />;
+  return <Today accountLabel={accountLabel} activeSession={activeSession} guidance={guidance} lastTrainedAt={lastTrainedAt} timeZone={timeZone} workouts={workouts} />;
 }
 
-function Today({ accountLabel, activeSession, dayEndsAt, guidance, lastTrainedAt, timeZone, workouts }: { accountLabel: string; activeSession?: HomeActiveSession; dayEndsAt: string; guidance: GuidanceState; lastTrainedAt?: string; timeZone: string; workouts: HomeWorkout[] }) {
+function Today({ accountLabel, activeSession, guidance, lastTrainedAt, timeZone, workouts }: { accountLabel: string; activeSession?: HomeActiveSession; guidance: GuidanceState; lastTrainedAt?: string; timeZone: string; workouts: HomeWorkout[] }) {
   const featured = selectNextWorkout(workouts);
   const now = new Date();
   const showGuide = !hasSeenGuidance(guidance, "home.overview.v1");
-  return <main className={styles.page}><section className={styles.shell}>
-    <AppHeader accountLabel={accountLabel} />
+  return <main className={styles.tabContent}>
     <header className={styles.todayHeader}><p>{formatHomeDate(now, timeZone)}</p><h1>Today</h1><span>{greetingFor(now, timeZone)}, {accountLabel}.</span></header>
 
     {showGuide && <ContextualTip
@@ -96,8 +89,7 @@ function Today({ accountLabel, activeSession, dayEndsAt, guidance, lastTrainedAt
       <header><h2>At a glance</h2><Link href="/progress">View progress</Link></header>
       <div><article><span>Saved workouts</span><strong>{workouts.length}</strong></article><article><span>Last trained</span><strong>{lastTrainedAt ? formatMonthDay(lastTrainedAt, timeZone) : "—"}</strong></article></div>
     </section>
-    <PrimaryNav active="home" activeSessionId={activeSession?.id} dayEndsAt={dayEndsAt} />
-  </section></main>;
+  </main>;
 }
 
 function WorkoutLibrary({ activeSession, workouts }: { activeSession?: HomeActiveSession; workouts: HomeWorkout[] }) {

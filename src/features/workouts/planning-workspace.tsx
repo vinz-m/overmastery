@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
-import { AppHeader } from "@/features/navigation/app-header";
-import { PrimaryNav } from "@/features/navigation/primary-nav";
 import { ContextualTip } from "@/features/guidance/contextual-tip";
 import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
 
@@ -13,17 +11,11 @@ import styles from "./planning-workspace.module.css";
 export type PlanningView = "exercises" | "workouts";
 
 export function WorkoutPlanningWorkspace({
-  accountLabel,
-  activeSessionId,
-  dayEndsAt,
   defaultView,
   exerciseLibrary,
   guidance,
   workoutTemplates,
 }: {
-  accountLabel: string;
-  activeSessionId?: string;
-  dayEndsAt: string;
   defaultView: PlanningView;
   exerciseLibrary: React.ReactNode;
   guidance: GuidanceState;
@@ -61,10 +53,7 @@ export function WorkoutPlanningWorkspace({
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.shell}>
-        <AppHeader accountLabel={accountLabel} />
-
+    <main className={styles.tabContent}>
         <nav
           className={styles.tabs}
           aria-label="Planning library"
@@ -142,12 +131,6 @@ export function WorkoutPlanningWorkspace({
           {exerciseLibrary}
         </motion.div>
 
-        <PrimaryNav
-          active="workouts"
-          activeSessionId={activeSessionId}
-          dayEndsAt={dayEndsAt}
-        />
-      </section>
     </main>
   );
 }

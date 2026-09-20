@@ -1,19 +1,19 @@
-type VerifiedUserResult<TUser extends { id?: string }> = {
+type VerifiedClaimsResult = {
   data: {
-    user: TUser | null;
-  };
+    claims: { sub?: string } | null;
+  } | null;
   error: unknown;
 };
 
-type SuccessfulVerifiedUserResult<TUser extends { id?: string }> = {
+type SuccessfulVerifiedClaimsResult = {
   data: {
-    user: TUser & { id: string };
+    claims: { sub: string };
   };
   error: null;
 };
 
-export function hasVerifiedUser<TUser extends { id?: string }>(
-  result: VerifiedUserResult<TUser>,
-): result is SuccessfulVerifiedUserResult<TUser> {
-  return !result.error && Boolean(result.data.user?.id);
+export function hasVerifiedClaims(
+  result: VerifiedClaimsResult,
+): result is SuccessfulVerifiedClaimsResult {
+  return !result.error && Boolean(result.data?.claims?.sub);
 }

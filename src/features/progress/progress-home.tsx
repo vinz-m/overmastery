@@ -1,30 +1,20 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 
-
-import { PrimaryNav } from "@/features/navigation/primary-nav";
 import { ContextualTip } from "@/features/guidance/contextual-tip";
 import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
 
 import { formatPerformance, formatSessionDate } from "./format";
-import { AppHeader } from "@/features/navigation/app-header";
-
 import styles from "./progress.module.css";
 import type { ExerciseTimeline, HistorySession } from "./types";
 import type { UnitSystem } from "@/lib/units";
 
 export function ProgressHome({
-  dayEndsAt,
-  accountLabel,
-  activeSessionId,
   exercises,
   guidance,
   sessions,
   unitSystem,
 }: {
-  dayEndsAt: string;
-  accountLabel: string;
-  activeSessionId?: string;
   exercises: ExerciseTimeline[];
   guidance: GuidanceState;
   sessions: HistorySession[];
@@ -37,10 +27,7 @@ export function ProgressHome({
   const latest = sessions[0];
 
   return (
-    <main className={styles.page}>
-      <section className={styles.shell}>
-        <AppHeader accountLabel={accountLabel} />
-
+    <main className={styles.tabContent}>
         <section className={styles.lead}>
           <p>Progress</p>
           <h1>Progress</h1>
@@ -65,7 +52,7 @@ export function ProgressHome({
           <>
             <section className={styles.snapshot}>
               <div>
-                <span>Recorded so far</span>
+                <span>Recent record</span>
                 <strong>{sessions.length}</strong>
                 <small>{sessions.length === 1 ? "session" : "sessions"}</small>
               </div>
@@ -84,7 +71,7 @@ export function ProgressHome({
             <section className={styles.section}>
               <header>
                 <div><span>Recent</span><h2>Sessions</h2></div>
-                <small>{sessions.length} shown</small>
+                <small>{sessions.length} recent</small>
               </header>
               <div className={styles.sessionList}>
                 {sessions.slice(0, 12).map((session) => (
@@ -131,8 +118,6 @@ export function ProgressHome({
           </>
         )}
 
-        <PrimaryNav active="progress" activeSessionId={activeSessionId} dayEndsAt={dayEndsAt} />
-      </section>
     </main>
   );
 }
