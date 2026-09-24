@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CaretDownIcon, CheckIcon } from "@phosphor-icons/react";
 
@@ -61,7 +55,8 @@ export function SelectField({
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener("pointerdown", closeOnOutsidePress);
-    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
   }, [open]);
 
   function openMenu(index = selectedIndex) {
@@ -89,9 +84,10 @@ export function SelectField({
   function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      const nextIndex = event.key === "ArrowDown"
-        ? Math.min(options.length - 1, selectedIndex + 1)
-        : Math.max(0, selectedIndex - 1);
+      const nextIndex =
+        event.key === "ArrowDown"
+          ? Math.min(options.length - 1, selectedIndex + 1)
+          : Math.max(0, selectedIndex - 1);
       openMenu(nextIndex);
     }
   }
@@ -180,7 +176,9 @@ export function SelectField({
               return (
                 <button
                   aria-selected={selected}
-                  className={index === activeIndex ? styles.activeOption : undefined}
+                  className={
+                    index === activeIndex ? styles.activeOption : undefined
+                  }
                   id={`${listboxId}-option-${index}`}
                   key={option.value}
                   onClick={() => choose(index)}

@@ -54,13 +54,13 @@ export function groupExercises(
     const key = exercise.isArchived
       ? "archived"
       : exercise.isCustom
-      ? "custom"
-      : exercise.primaryMuscle?.slug ?? "other";
+        ? "custom"
+        : (exercise.primaryMuscle?.slug ?? "other");
     const label = exercise.isArchived
       ? "Archived exercises"
       : exercise.isCustom
-      ? "Custom exercises"
-      : exercise.primaryMuscle?.name ?? "Other exercises";
+        ? "Custom exercises"
+        : (exercise.primaryMuscle?.name ?? "Other exercises");
     const group = grouped.get(key) ?? { exercises: [], key, label };
     group.exercises.push(exercise);
     grouped.set(key, group);
@@ -71,6 +71,8 @@ export function groupExercises(
     const rightIndex = muscleOrder.indexOf(right.key);
     const normalizedLeft = leftIndex === -1 ? muscleOrder.length : leftIndex;
     const normalizedRight = rightIndex === -1 ? muscleOrder.length : rightIndex;
-    return normalizedLeft - normalizedRight || left.label.localeCompare(right.label);
+    return (
+      normalizedLeft - normalizedRight || left.label.localeCompare(right.label)
+    );
   });
 }

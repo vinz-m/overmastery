@@ -17,7 +17,9 @@ export type AuthActionState = {
 
 function readCredentials(formData: FormData) {
   return {
-    email: String(formData.get("email") ?? "").trim().toLowerCase(),
+    email: String(formData.get("email") ?? "")
+      .trim()
+      .toLowerCase(),
     password: String(formData.get("password") ?? ""),
   };
 }

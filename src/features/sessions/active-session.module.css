@@ -1,85 +1,690 @@
-.page { min-height: 100dvh; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans); }
-.shell { position: relative; width: min(100%, 430px); min-height: 100dvh; margin: 0 auto; overflow: hidden; background: var(--background); }
-.stickyHeader { position: sticky; top: 0; z-index: 20; min-height: 64px; display: grid; grid-template-columns: 52px 1fr 64px; align-items: center; padding: max(8px, env(safe-area-inset-top)) 10px 8px; border-bottom: 1px solid var(--border); background: var(--header-surface); backdrop-filter: blur(18px); }
-.stickyHeader > a { width: 44px; height: 44px; display: grid; place-items: center; color: var(--accent); font-size: 30px; text-decoration: none; }
-.stickyHeader > div { min-width: 0; display: grid; justify-items: center; gap: 2px; }
-.stickyHeader strong { overflow: hidden; max-width: 100%; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
-.stickyHeader span { color: var(--muted); font: 12px var(--font-geist-mono); }
-.stickyHeader > button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer; }
-.stickyHeader > button:disabled { opacity: .35; cursor: default; }
-.errorBanner { position: sticky; top: 64px; z-index: 18; margin: 8px 16px 0; padding: 12px 14px; border-left: 3px solid var(--negative); border-radius: 10px; background: var(--negative-soft); color: var(--negative); font-size: 13px; line-height: 1.45; }
-.syncBanner { position: sticky; top: 64px; z-index: 18; margin: 8px 16px 0; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: 10px; background: var(--accent-soft); color: var(--foreground); font-size: 13px; line-height: 1.45; }
-.content { padding: 16px 16px calc(28px + env(safe-area-inset-bottom)); }
-.exerciseHeader { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 4px; }
-.exerciseCount { color: var(--muted); font-size: 12px; }
+.page {
+  min-height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans);
+}
+.shell {
+  position: relative;
+  width: min(100%, 430px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--background);
+}
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 52px 1fr 64px;
+  align-items: center;
+  padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--header-surface);
+  backdrop-filter: blur(18px);
+}
+.stickyHeader > a {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  font-size: 30px;
+  text-decoration: none;
+}
+.stickyHeader > div {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.stickyHeader strong {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stickyHeader span {
+  color: var(--muted);
+  font: 12px var(--font-geist-mono);
+}
+.stickyHeader > button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.stickyHeader > button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.errorBanner {
+  position: sticky;
+  top: 64px;
+  z-index: 18;
+  margin: 8px 16px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--negative);
+  border-radius: 10px;
+  background: var(--negative-soft);
+  color: var(--negative);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.syncBanner {
+  position: sticky;
+  top: 64px;
+  z-index: 18;
+  margin: 8px 16px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.content {
+  padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
+}
+.exerciseHeader {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-left: 4px;
+}
+.exerciseCount {
+  color: var(--muted);
+  font-size: 12px;
+}
 /* The chevron sits in a 44px column so it lines up under the ⋯ button above. */
-.exercisePicker { width: 100%; min-height: 72px; display: grid; grid-template-areas: "name chevron" "meta ."; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 4px 8px; padding: 2px 0 10px 4px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.exercisePicker > span { display: contents; } .exercisePicker small { grid-area: meta; color: var(--muted); font-size: 12px; }
-.exercisePicker strong { grid-area: name; font-family: var(--font-display); font-size: clamp(27px, 8vw, 34px); font-weight: 600; line-height: 1.1; letter-spacing: -.035em; overflow-wrap: anywhere; }
-.exercisePicker > svg { grid-area: chevron; justify-self: center; color: var(--accent); }
-.exerciseMenu { position: relative; z-index: 12; }
-.exerciseMenu summary { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 12px; background: var(--surface); color: var(--muted); box-shadow: 0 2px 10px var(--shadow-soft); font-weight: 700; cursor: pointer; list-style: none; }
-.exerciseMenu summary::-webkit-details-marker { display: none; }
-.exerciseMenu > div { position: absolute; top: 50px; right: 0; width: min(310px, calc(100vw - 32px)); padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 45px var(--shadow); }
-.exerciseMenu strong { font-size: 14px; } .exerciseMenu p { margin: 5px 0 14px; color: var(--muted); font-size: 12px; line-height: 1.45; }
-.menuAction, .exerciseMenu .skipButton { width: 100%; min-height: 44px; margin-top: 8px; border: 1px solid transparent; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer; }
-.exerciseMenu button:disabled { opacity: .4; cursor: default; } .exerciseMenu .skipButton { background: transparent; color: var(--negative); }
-.exerciseMenu small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; text-align: center; }
-.exerciseMenu hr { margin: 14px 0 12px; border: 0; border-top: 1px solid var(--border); }
-.exerciseMenu .discardAction { width: 100%; min-height: 44px; margin-top: 8px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--negative); font-weight: 600; cursor: pointer; }
-.activeSet, .statusCard { margin-top: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); box-shadow: 0 12px 34px var(--shadow-soft); }
-.activeSet > header { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
-.activeSet > header > div { display: grid; gap: 4px; } .activeSet header span, .activeSet header small { color: var(--muted); font-size: 12px; }
-.activeSet header strong { font-size: 18px; }
-.previousSet { margin: 20px 0 14px; color: var(--muted); font-size: 13px; } .previousSet strong { color: var(--foreground); font-weight: 600; }
-.setInputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.setInputs label, .bodyweightField { min-width: 0; display: grid; gap: 7px; color: var(--muted); font-size: 12px; }
-.setInputs label > div { position: relative; } .setInputs input, .bodyweightField strong { width: 100%; min-width: 0; height: 64px; padding: 0 14px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--background); color: var(--foreground); font: 600 27px var(--font-geist-mono); }
-.setInputs label > div input { padding-right: 60px; }
+.exercisePicker {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  grid-template-areas: "name chevron" "meta .";
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 2px 0 10px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.exercisePicker > span {
+  display: contents;
+}
+.exercisePicker small {
+  grid-area: meta;
+  color: var(--muted);
+  font-size: 12px;
+}
+.exercisePicker strong {
+  grid-area: name;
+  font-family: var(--font-display);
+  font-size: clamp(27px, 8vw, 34px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.exercisePicker > svg {
+  grid-area: chevron;
+  justify-self: center;
+  color: var(--accent);
+}
+.exerciseMenu {
+  position: relative;
+  z-index: 12;
+}
+.exerciseMenu summary {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: 0 2px 10px var(--shadow-soft);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.exerciseMenu summary::-webkit-details-marker {
+  display: none;
+}
+.exerciseMenu > div {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: min(310px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 18px 45px var(--shadow);
+}
+.exerciseMenu strong {
+  font-size: 14px;
+}
+.exerciseMenu p {
+  margin: 5px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.menuAction,
+.exerciseMenu .skipButton {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.exerciseMenu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.exerciseMenu .skipButton {
+  background: transparent;
+  color: var(--negative);
+}
+.exerciseMenu small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.exerciseMenu hr {
+  margin: 14px 0 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.exerciseMenu .discardAction {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--negative);
+  font-weight: 600;
+  cursor: pointer;
+}
+.activeSet,
+.statusCard {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 12px 34px var(--shadow-soft);
+}
+.activeSet > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.activeSet > header > div {
+  display: grid;
+  gap: 4px;
+}
+.activeSet header span,
+.activeSet header small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.activeSet header strong {
+  font-size: 18px;
+}
+.previousSet {
+  margin: 20px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.previousSet strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.setInputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.setInputs label,
+.bodyweightField {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.setInputs label > div {
+  position: relative;
+}
+.setInputs input,
+.bodyweightField strong {
+  width: 100%;
+  min-width: 0;
+  height: 64px;
+  padding: 0 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  background: var(--background);
+  color: var(--foreground);
+  font: 600 27px var(--font-geist-mono);
+}
+.setInputs label > div input {
+  padding-right: 60px;
+}
 /* Tappable unit pill: machines are labelled in kg or lb, so each set can switch. */
-.unitToggle { position: absolute; right: 8px; top: 50%; min-width: 44px; height: 44px; display: grid; place-items: center; margin-top: -22px; padding: 0 8px; border: 0; background: transparent; color: var(--accent); font: 600 13px var(--font-geist-sans); cursor: pointer; }
-.unitToggle::before { content: ""; position: absolute; inset: 8px 2px; z-index: -1; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); }
-.unitToggle { isolation: isolate; }
-.unitToggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-radius: 10px; }
-.bodyweightField strong { display: flex; align-items: center; font: 600 15px var(--font-geist-sans); }
-.completeSet { width: 100%; min-height: 54px; margin-top: 12px; border: 0; border-radius: 14px; background: var(--accent); color: white; font-weight: 650; cursor: pointer; }
-.completeSet:disabled { opacity: .4; cursor: default; }
-.statusCard { display: grid; gap: 7px; } .statusCard span { color: var(--muted); font-size: 12px; } .statusCard p { color: var(--muted); font-size: 13px; }
-.progressSection { display: grid; justify-items: center; }
-.setProgress { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 22px 0 12px; }
-.setProgress span, .setProgress button { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: transparent; color: var(--muted); font: 600 12px var(--font-geist-mono); }
-.setProgress button { cursor: pointer; } .setProgress .progressDone { border-color: var(--positive); background: var(--positive-soft); color: var(--positive); }
-.setProgress .progressCurrent { border: 2px solid var(--accent); color: var(--accent); } .setProgress .progressSkipped { color: var(--negative); }
-.setActions { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
-.setActions button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface); color: var(--foreground); font-size: 13px; font-weight: 600; cursor: pointer; }
-.setActions button svg { color: var(--accent); } .setActions .removeSet svg { color: var(--negative); }
-.setActions button:disabled { opacity: .4; cursor: default; }
-.setActionsHint { margin-top: 8px; color: var(--muted); font-size: 12px; }
-@media (hover: hover) { .setActions button:not(:disabled):hover { background: var(--surface-soft); } }
-.upNext { width: 100%; min-height: 72px; display: grid; grid-template-columns: 1fr 30px; align-items: center; gap: 3px 12px; margin-top: 14px; padding: 13px 16px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; }
-.upNext span { color: var(--muted); font-size: 11px; } .upNext strong { grid-column: 1; font-size: 15px; } .upNext i { grid-column: 2; grid-row: 1 / 3; display: grid; place-items: center; color: var(--accent); font-style: normal; }
-.sheetLayer { position: fixed; inset: 0; z-index: 40; display: grid; align-items: end; }
-.scrim { position: absolute; inset: 0; border: 0; background: var(--overlay); cursor: pointer; }
-.exerciseSheet { position: relative; width: min(100%, 430px); max-height: 72dvh; display: flex; flex-direction: column; justify-self: center; padding: 8px 0 calc(12px + env(safe-area-inset-bottom)); border: 0; border-radius: 24px 24px 0 0; background: var(--sheet-surface); box-shadow: 0 -18px 60px var(--shadow); }
-.sheetHandle { flex: none; margin-top: -8px; padding-top: 8px; touch-action: none; cursor: grab; }
-.sheetHandle:active { cursor: grabbing; }
+.unitToggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  min-width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-top: -22px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 600 13px var(--font-geist-sans);
+  cursor: pointer;
+}
+.unitToggle::before {
+  content: "";
+  position: absolute;
+  inset: 8px 2px;
+  z-index: -1;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.unitToggle {
+  isolation: isolate;
+}
+.unitToggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-radius: 10px;
+}
+.bodyweightField strong {
+  display: flex;
+  align-items: center;
+  font: 600 15px var(--font-geist-sans);
+}
+.completeSet {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: white;
+  font-weight: 650;
+  cursor: pointer;
+}
+.completeSet:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.statusCard {
+  display: grid;
+  gap: 7px;
+}
+.statusCard span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.statusCard p {
+  color: var(--muted);
+  font-size: 13px;
+}
+.progressSection {
+  display: grid;
+  justify-items: center;
+}
+.setProgress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 22px 0 12px;
+}
+.setProgress span,
+.setProgress button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px var(--font-geist-mono);
+}
+.setProgress button {
+  cursor: pointer;
+}
+.setProgress .progressDone {
+  border-color: var(--positive);
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+.setProgress .progressCurrent {
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+.setProgress .progressSkipped {
+  color: var(--negative);
+}
+.setActions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+}
+.setActions button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.setActions button svg {
+  color: var(--accent);
+}
+.setActions .removeSet svg {
+  color: var(--negative);
+}
+.setActions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.setActionsHint {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (hover: hover) {
+  .setActions button:not(:disabled):hover {
+    background: var(--surface-soft);
+  }
+}
+.upNext {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 1fr 30px;
+  align-items: center;
+  gap: 3px 12px;
+  margin-top: 14px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.upNext span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.upNext strong {
+  grid-column: 1;
+  font-size: 15px;
+}
+.upNext i {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  font-style: normal;
+}
+.sheetLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  align-items: end;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: var(--overlay);
+  cursor: pointer;
+}
+.exerciseSheet {
+  position: relative;
+  width: min(100%, 430px);
+  max-height: 72dvh;
+  display: flex;
+  flex-direction: column;
+  justify-self: center;
+  padding: 8px 0 calc(12px + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  background: var(--sheet-surface);
+  box-shadow: 0 -18px 60px var(--shadow);
+}
+.sheetHandle {
+  flex: none;
+  margin-top: -8px;
+  padding-top: 8px;
+  touch-action: none;
+  cursor: grab;
+}
+.sheetHandle:active {
+  cursor: grabbing;
+}
 /* Fixed height so filtering the list doesn't resize the sheet under the finger. */
-.sheetFixed { height: 72dvh; }
-.sheetGrabber { width: 38px; height: 5px; margin: 0 auto 5px; border-radius: 99px; background: var(--grabber); }
-.sheetHandle > header { min-height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; }
-.exerciseSheet h2 { font-size: 21px; letter-spacing: -.025em; } .exerciseSheet header button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--accent); font-weight: 600; cursor: pointer; }
-.sheetList { overflow-y: auto; padding: 0 10px; overscroll-behavior: contain; }
-.sheetSearch { flex: none; display: flex; align-items: center; gap: 8px; margin: 2px 16px 10px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--background); color: var(--muted); }
-.sheetSearch input { flex: 1; min-width: 0; height: 44px; border: 0; background: transparent; color: var(--foreground); font-size: 16px; outline: none; }
-.sheetSearch:focus-within { border-color: var(--accent); }
-.sheetGroup h3 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 10px 12px 6px; background: var(--sheet-surface); color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.sheetGroup > button { width: 100%; min-height: 58px; display: grid; grid-template-columns: 0 minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--foreground); text-align: left; cursor: pointer; }
-.sheetGroup > button > span:nth-child(2) { display: grid; gap: 3px; } .sheetGroup strong { font-size: 15px; } .sheetGroup small { color: var(--muted); font-size: 11px; } .sheetGroup > button > svg { color: var(--muted); }
-.sheetEmpty { padding: 24px 12px; color: var(--muted); font-size: 14px; text-align: center; }
-.sheetList > button { width: 100%; min-height: 62px; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--foreground); text-align: left; cursor: pointer; }
-.sheetList > button > span:nth-child(2) { display: grid; gap: 3px; } .sheetList strong { font-size: 15px; } .sheetList small { color: var(--muted); font-size: 11px; } .sheetList b { color: var(--muted); font: 500 12px var(--font-geist-mono); }
-.sheetStatus { color: var(--positive); font-weight: 700; text-align: center; } .sheetList .sheetCurrent { border-radius: 13px; background: var(--accent-soft); }
-.exercisePicker:focus-visible, .exerciseMenu summary:focus-visible, .exerciseMenu button:focus-visible, .exerciseMenu select:focus-visible, .setProgress button:focus-visible, .setActions button:focus-visible, .sheetGroup button:focus-visible, .upNext:focus-visible, .exerciseSheet button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (prefers-reduced-motion: no-preference) { .exerciseSheet { animation: sheet-in 220ms cubic-bezier(.2, 0, 0, 1); } .scrim { animation: scrim-in 160ms ease-out; } }
-@keyframes sheet-in { from { transform: translateY(24px); opacity: .5; } }
-@keyframes scrim-in { from { opacity: 0; } }
+.sheetFixed {
+  height: 72dvh;
+}
+.sheetGrabber {
+  width: 38px;
+  height: 5px;
+  margin: 0 auto 5px;
+  border-radius: 99px;
+  background: var(--grabber);
+}
+.sheetHandle > header {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+}
+.exerciseSheet h2 {
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+.exerciseSheet header button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.sheetList {
+  overflow-y: auto;
+  padding: 0 10px;
+  overscroll-behavior: contain;
+}
+.sheetSearch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 16px 10px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--muted);
+}
+.sheetSearch input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 16px;
+  outline: none;
+}
+.sheetSearch:focus-within {
+  border-color: var(--accent);
+}
+.sheetGroup h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 12px 6px;
+  background: var(--sheet-surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sheetGroup > button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 0 minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+}
+.sheetGroup > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.sheetGroup strong {
+  font-size: 15px;
+}
+.sheetGroup small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sheetGroup > button > svg {
+  color: var(--muted);
+}
+.sheetEmpty {
+  padding: 24px 12px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+.sheetList > button {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+}
+.sheetList > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.sheetList strong {
+  font-size: 15px;
+}
+.sheetList small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sheetList b {
+  color: var(--muted);
+  font: 500 12px var(--font-geist-mono);
+}
+.sheetStatus {
+  color: var(--positive);
+  font-weight: 700;
+  text-align: center;
+}
+.sheetList .sheetCurrent {
+  border-radius: 13px;
+  background: var(--accent-soft);
+}
+.exercisePicker:focus-visible,
+.exerciseMenu summary:focus-visible,
+.exerciseMenu button:focus-visible,
+.exerciseMenu select:focus-visible,
+.setProgress button:focus-visible,
+.setActions button:focus-visible,
+.sheetGroup button:focus-visible,
+.upNext:focus-visible,
+.exerciseSheet button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .exerciseSheet {
+    animation: sheet-in 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  .scrim {
+    animation: scrim-in 160ms ease-out;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0.5;
+  }
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}

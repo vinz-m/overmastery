@@ -86,7 +86,9 @@ export async function adoptDeviceTimeZone(timeZone: string) {
 
 const timeZoneChosenKey = "overmastery_time_zone_chosen";
 
-async function markTimeZoneChosen(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function markTimeZoneChosen(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return;
   await supabase.auth.updateUser({
@@ -126,8 +128,10 @@ export async function changePassword(
   const newPassword = String(formData.get("newPassword") ?? "");
   const fieldErrors: NonNullable<ProfileActionState["fieldErrors"]> = {};
 
-  if (!currentPassword) fieldErrors.currentPassword = "Enter your current password.";
-  if (newPassword.length < 8) fieldErrors.newPassword = "Use at least 8 characters.";
+  if (!currentPassword)
+    fieldErrors.currentPassword = "Enter your current password.";
+  if (newPassword.length < 8)
+    fieldErrors.newPassword = "Use at least 8 characters.";
   if (currentPassword && currentPassword === newPassword) {
     fieldErrors.newPassword = "Choose a different password.";
   }
@@ -140,7 +144,10 @@ export async function changePassword(
   });
 
   if (error) {
-    return { message: "The password could not be changed. Check your current password." };
+    return {
+      message:
+        "The password could not be changed. Check your current password.",
+    };
   }
   return { message: "Password changed.", success: true };
 }

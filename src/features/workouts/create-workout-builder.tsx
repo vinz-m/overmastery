@@ -2,18 +2,22 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState, useTransition } from "react";
-import { motion } from "motion/react";
+import { motion, Reorder, useDragControls } from "motion/react";
 import {
   ArrowDownIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpIcon,
   CaretDownIcon,
+  DotsSixVerticalIcon,
   MagnifyingGlassIcon,
   XIcon,
 } from "@phosphor-icons/react";
 
-import { groupExercises, type ExerciseGroup } from "@/features/exercises/exercise-filter";
+import {
+  groupExercises,
+  type ExerciseGroup,
+} from "@/features/exercises/exercise-filter";
 import { recordGuidance } from "@/features/guidance/actions";
 import {
   hasSeenGuidance,
@@ -35,7 +39,11 @@ import {
 import styles from "./create-workout.module.css";
 
 const MotionCaretDown = motion.create(CaretDownIcon);
-import type { ExerciseCatalogItem, WorkoutExerciseDraft, WorkoutTemplateDraft } from "./types";
+import type {
+  ExerciseCatalogItem,
+  WorkoutExerciseDraft,
+  WorkoutTemplateDraft,
+} from "./types";
 import { navBack } from "@/features/navigation/page-transition";
 
 const initialWorkoutState: CreateWorkoutState = {};
@@ -47,6 +55,141 @@ const trackingOptions = [
   { label: "Assistance + reps", value: "assistance_reps" },
 ];
 
+type DraftField =
+  "defaultRestSeconds" | "targetRepMax" | "targetRepMin" | "targetSets";
+
+/**
+ * One exercise in the plan. Drag by the grip to reorder; the list itself
+ * stays scrollable because only the handle starts a drag. Drag has no
+ * keyboard equivalent, so the expanded settings keep Move earlier/later.
+ */
+function SelectedExerciseRow({
+  exercise,
+  expanded,
+  index,
+  isFirst,
+  isLast,
+  onMove,
+  onRemove,
+  onToggle,
+  onUpdate,
+}: {
+  exercise: WorkoutExerciseDraft;
+  expanded: boolean;
+  index: number;
+  isFirst: boolean;
+  isLast: boolean;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: () => void;
+  onToggle: () => void;
+  onUpdate: (field: DraftField, value: number) => void;
+}) {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item
+      as="li"
+      className={styles.selectedRow}
+      dragControls={dragControls}
+      dragListener={false}
+      value={exercise}
+      whileDrag={{
+        boxShadow: "0 12px 30px var(--shadow)",
+        scale: 1.02,
+        zIndex: 2,
+      }}
+    >
+      <button
+        aria-hidden="true"
+        className={styles.dragHandle}
+        onPointerDown={(event) => dragControls.start(event)}
+        tabIndex={-1}
+        type="button"
+      >
+        <DotsSixVerticalIcon size={18} weight="bold" />
+      </button>
+      <div className={styles.order}>{String(index + 1).padStart(2, "0")}</div>
+      <div className={styles.exerciseConfig}>
+        <header>
+          <button
+            aria-expanded={expanded}
+            aria-controls={`exercise-config-${exercise.id}`}
+            className={styles.configToggle}
+            onClick={onToggle}
+            type="button"
+          >
+            <span>
+              <strong>{exercise.name}</strong>
+              <small>{trackingLabel(exercise.trackingType)}</small>
+            </span>
+            <MotionCaretDown
+              animate={{ rotate: expanded ? 180 : 0 }}
+              aria-hidden="true"
+              initial={false}
+              size={20}
+              transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+              weight="bold"
+            />
+          </button>
+          <div className={styles.orderButtons}>
+            <button
+              onClick={onRemove}
+              type="button"
+              aria-label={`Remove ${exercise.name}`}
+            >
+              <XIcon aria-hidden="true" size={16} weight="bold" />
+            </button>
+          </div>
+        </header>
+        <Collapsible
+          className={styles.configGrid}
+          id={`exercise-config-${exercise.id}`}
+          open={expanded}
+        >
+          <NumberField
+            label="Sets"
+            max={20}
+            min={1}
+            value={exercise.targetSets}
+            onChange={(value) => onUpdate("targetSets", value)}
+          />
+          <NumberField
+            label="Rep min"
+            max={100}
+            min={1}
+            value={exercise.targetRepMin}
+            onChange={(value) => onUpdate("targetRepMin", value)}
+          />
+          <NumberField
+            label="Rep max"
+            max={100}
+            min={exercise.targetRepMin}
+            value={exercise.targetRepMax}
+            onChange={(value) => onUpdate("targetRepMax", value)}
+          />
+          <NumberField
+            label="Rest sec"
+            max={3600}
+            min={0}
+            step={15}
+            value={exercise.defaultRestSeconds}
+            onChange={(value) => onUpdate("defaultRestSeconds", value)}
+          />
+          <div className={styles.moveButtons}>
+            <button disabled={isFirst} onClick={() => onMove(-1)} type="button">
+              <ArrowUpIcon aria-hidden="true" size={16} weight="bold" />
+              Move earlier
+            </button>
+            <button disabled={isLast} onClick={() => onMove(1)} type="button">
+              <ArrowDownIcon aria-hidden="true" size={16} weight="bold" />
+              Move later
+            </button>
+          </div>
+        </Collapsible>
+      </div>
+    </Reorder.Item>
+  );
+}
+
 export function CreateWorkoutBuilder({
   catalog,
   initialGuidance,
@@ -56,7 +199,9 @@ export function CreateWorkoutBuilder({
   initialGuidance: GuidanceState;
   workout?: WorkoutTemplateDraft;
 }) {
-  const saveWorkout = workout ? updateWorkout.bind(null, workout.id) : createWorkout;
+  const saveWorkout = workout
+    ? updateWorkout.bind(null, workout.id)
+    : createWorkout;
   const [workoutState, workoutAction, workoutPending] = useActionState(
     saveWorkout,
     initialWorkoutState,
@@ -66,8 +211,12 @@ export function CreateWorkoutBuilder({
     initialExerciseState,
   );
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<WorkoutExerciseDraft[]>(workout?.exercises ?? []);
-  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<WorkoutExerciseDraft[]>(
+    workout?.exercises ?? [],
+  );
+  const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
+    null,
+  );
   const [guidance, setGuidance] = useState(initialGuidance);
   const [, startGuidanceTransition] = useTransition();
 
@@ -81,7 +230,9 @@ export function CreateWorkoutBuilder({
 
     return combined
       .filter((exercise) => !selected.some((item) => item.id === exercise.id))
-      .filter((exercise) => !query || exercise.name.toLowerCase().includes(query));
+      .filter(
+        (exercise) => !query || exercise.name.toLowerCase().includes(query),
+      );
   }, [catalog, exerciseState.exercise, search, selected]);
   const availableGroups = useMemo(() => groupExercises(available), [available]);
 
@@ -118,7 +269,8 @@ export function CreateWorkoutBuilder({
 
   const updateExercise = (
     index: number,
-    field: "defaultRestSeconds" | "targetRepMax" | "targetRepMin" | "targetSets",
+    field:
+      "defaultRestSeconds" | "targetRepMax" | "targetRepMin" | "targetSets",
     value: number,
   ) => {
     setSelected((current) =>
@@ -157,9 +309,20 @@ export function CreateWorkoutBuilder({
     <main className={styles.page}>
       <form action={workoutAction} className={styles.builder}>
         <header className={styles.topbar}>
-          <Link href="/workouts" transitionTypes={navBack} aria-label={workout ? "Cancel workout editing" : "Cancel workout creation"}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
+          <Link
+            href="/workouts"
+            transitionTypes={navBack}
+            aria-label={
+              workout ? "Cancel workout editing" : "Cancel workout creation"
+            }
+          >
+            <ArrowLeftIcon aria-hidden="true" size={20} weight="bold" />
+          </Link>
           <strong>{workout ? "EDIT WORKOUT" : "NEW WORKOUT"}</strong>
-          <button disabled={workoutPending || selected.length === 0} type="submit">
+          <button
+            disabled={workoutPending || selected.length === 0}
+            type="submit"
+          >
             {workoutPending ? "Saving…" : "Save"}
           </button>
         </header>
@@ -169,7 +332,11 @@ export function CreateWorkoutBuilder({
           <label>
             <span>Name your workout</span>
             <input
-              aria-describedby={workoutState.fieldErrors?.name ? "workout-name-error" : undefined}
+              aria-describedby={
+                workoutState.fieldErrors?.name
+                  ? "workout-name-error"
+                  : undefined
+              }
               aria-invalid={Boolean(workoutState.fieldErrors?.name)}
               autoFocus
               defaultValue={workout?.name}
@@ -178,16 +345,28 @@ export function CreateWorkoutBuilder({
               required
             />
           </label>
-          {workoutState.fieldErrors?.name && <small id="workout-name-error">{workoutState.fieldErrors.name}</small>}
+          {workoutState.fieldErrors?.name && (
+            <small id="workout-name-error">
+              {workoutState.fieldErrors.name}
+            </small>
+          )}
         </section>
 
-        <input name="exercises" type="hidden" value={JSON.stringify(selected)} />
+        <input
+          name="exercises"
+          type="hidden"
+          value={JSON.stringify(selected)}
+        />
 
         <section className={styles.ledger}>
           <header>
             <div>
               <span>Session order</span>
-              <strong>{selected.length ? `${selected.length} ${selected.length === 1 ? "exercise" : "exercises"}` : "No exercises yet"}</strong>
+              <strong>
+                {selected.length
+                  ? `${selected.length} ${selected.length === 1 ? "exercise" : "exercises"}`
+                  : "No exercises yet"}
+              </strong>
             </div>
             <small>In your training order</small>
           </header>
@@ -195,7 +374,12 @@ export function CreateWorkoutBuilder({
           {showConfigureGuide && (
             <Coachmark
               body="Set the working sets, rep range, and rest that should be waiting when this workout starts."
-              dismiss={() => markGuidance("workout-builder.configure-exercise.v1", "dismissed")}
+              dismiss={() =>
+                markGuidance(
+                  "workout-builder.configure-exercise.v1",
+                  "dismissed",
+                )
+              }
               label="Shape the plan"
             />
           )}
@@ -203,58 +387,53 @@ export function CreateWorkoutBuilder({
           {selected.length === 0 ? (
             <div className={styles.ledgerEmpty}>
               <span>01</span>
-              <p>Add exercises below. They will appear here in training order.</p>
+              <p>
+                Add exercises below. They will appear here in training order.
+              </p>
             </div>
           ) : (
-            <ol className={styles.selectedList}>
+            <Reorder.Group
+              as="ol"
+              axis="y"
+              className={styles.selectedList}
+              onReorder={setSelected}
+              values={selected}
+            >
               {selected.map((exercise, index) => (
-                <li key={exercise.id}>
-                  <div className={styles.order}>{String(index + 1).padStart(2, "0")}</div>
-                  <div className={styles.exerciseConfig}>
-                    <header>
-                      <button
-                        aria-expanded={expandedExerciseId === exercise.id}
-                        aria-controls={`exercise-config-${exercise.id}`}
-                        className={styles.configToggle}
-                        onClick={() => setExpandedExerciseId((current) => current === exercise.id ? null : exercise.id)}
-                        type="button"
-                      >
-                        <span><strong>{exercise.name}</strong><small>{trackingLabel(exercise.trackingType)}</small></span>
-                        <MotionCaretDown
-                          animate={{ rotate: expandedExerciseId === exercise.id ? 180 : 0 }}
-                          aria-hidden="true"
-                          initial={false}
-                          size={20}
-                          transition={{ type: "spring", duration: 0.3, bounce: 0 }}
-                          weight="bold"
-                        />
-                      </button>
-                      <div className={styles.orderButtons}>
-                        <button disabled={index === 0} onClick={() => moveExercise(index, -1)} type="button" aria-label={`Move ${exercise.name} earlier`}><ArrowUpIcon aria-hidden="true" size={16} weight="bold" /></button>
-                        <button disabled={index === selected.length - 1} onClick={() => moveExercise(index, 1)} type="button" aria-label={`Move ${exercise.name} later`}><ArrowDownIcon aria-hidden="true" size={16} weight="bold" /></button>
-                        <button onClick={() => {
-                          setSelected((current) => current.filter((_, itemIndex) => itemIndex !== index));
-                          setExpandedExerciseId((current) => current === exercise.id ? null : current);
-                        }} type="button" aria-label={`Remove ${exercise.name}`}><XIcon aria-hidden="true" size={16} weight="bold" /></button>
-                      </div>
-                    </header>
-                    <Collapsible
-                      className={styles.configGrid}
-                      id={`exercise-config-${exercise.id}`}
-                      open={expandedExerciseId === exercise.id}
-                    >
-                      <NumberField label="Sets" max={20} min={1} value={exercise.targetSets} onChange={(value) => updateExercise(index, "targetSets", value)} />
-                      <NumberField label="Rep min" max={100} min={1} value={exercise.targetRepMin} onChange={(value) => updateExercise(index, "targetRepMin", value)} />
-                      <NumberField label="Rep max" max={100} min={exercise.targetRepMin} value={exercise.targetRepMax} onChange={(value) => updateExercise(index, "targetRepMax", value)} />
-                      <NumberField label="Rest sec" max={3600} min={0} step={15} value={exercise.defaultRestSeconds} onChange={(value) => updateExercise(index, "defaultRestSeconds", value)} />
-                    </Collapsible>
-                  </div>
-                </li>
+                <SelectedExerciseRow
+                  exercise={exercise}
+                  expanded={expandedExerciseId === exercise.id}
+                  index={index}
+                  isFirst={index === 0}
+                  isLast={index === selected.length - 1}
+                  key={exercise.id}
+                  onMove={(direction) => moveExercise(index, direction)}
+                  onRemove={() => {
+                    setSelected((current) =>
+                      current.filter((_, itemIndex) => itemIndex !== index),
+                    );
+                    setExpandedExerciseId((current) =>
+                      current === exercise.id ? null : current,
+                    );
+                  }}
+                  onToggle={() =>
+                    setExpandedExerciseId((current) =>
+                      current === exercise.id ? null : exercise.id,
+                    )
+                  }
+                  onUpdate={(field, value) =>
+                    updateExercise(index, field, value)
+                  }
+                />
               ))}
-            </ol>
+            </Reorder.Group>
           )}
 
-          {workoutState.fieldErrors?.exercises && <p className={styles.formError}>{workoutState.fieldErrors.exercises}</p>}
+          {workoutState.fieldErrors?.exercises && (
+            <p className={styles.formError}>
+              {workoutState.fieldErrors.exercises}
+            </p>
+          )}
         </section>
 
         <Disclosure
@@ -264,21 +443,33 @@ export function CreateWorkoutBuilder({
           label="Add exercises"
         >
           <header>
-            <div><span>Exercise library</span><strong>Add to this workout</strong></div>
+            <div>
+              <span>Exercise library</span>
+              <strong>Add to this workout</strong>
+            </div>
             <small>{catalog.length} available</small>
           </header>
 
           {showAddGuide && (
             <Coachmark
               body="Search the library and add the first movement in your training order."
-              dismiss={() => markGuidance("workout-builder.add-exercise.v1", "dismissed")}
+              dismiss={() =>
+                markGuidance("workout-builder.add-exercise.v1", "dismissed")
+              }
               label="Build from the work"
             />
           )}
 
           <label className={styles.search}>
-            <span aria-hidden="true"><MagnifyingGlassIcon size={18} weight="bold" /></span>
-            <input aria-label="Search exercises" onChange={(event) => setSearch(event.target.value)} placeholder="Search bench, squat, row…" value={search} />
+            <span aria-hidden="true">
+              <MagnifyingGlassIcon size={18} weight="bold" />
+            </span>
+            <input
+              aria-label="Search exercises"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search bench, squat, row…"
+              value={search}
+            />
           </label>
 
           <div className={styles.catalogGroups}>
@@ -291,7 +482,9 @@ export function CreateWorkoutBuilder({
                 key={group.key}
               />
             ))}
-            {available.length === 0 && <p>No matching exercises. Create a custom one below.</p>}
+            {available.length === 0 && (
+              <p>No matching exercises. Create a custom one below.</p>
+            )}
           </div>
         </Disclosure>
 
@@ -300,42 +493,87 @@ export function CreateWorkoutBuilder({
           contentClassName={styles.customExerciseContent}
           label="Create a custom exercise"
         >
-            <label><span>Exercise name</span><input name="customExerciseName" placeholder="e.g. Cable Y-raise" form="custom-exercise-form" /></label>
-            <div className={styles.fieldGroup}>
-              <span>Track with</span>
-              <SelectField
-                ariaLabel="Track with"
-                defaultValue="weight_reps"
-                form="custom-exercise-form"
-                name="trackingType"
-                options={trackingOptions}
-              />
-            </div>
-            <button disabled={exercisePending} form="custom-exercise-form" type="submit">{exercisePending ? "Creating…" : "Create exercise"}</button>
-            {exerciseState.message && <p className={styles.formError}>{exerciseState.message}</p>}
-            {exerciseState.exercise && <p className={styles.createdMessage}>{exerciseState.exercise.name} is ready in the library above.</p>}
+          <label>
+            <span>Exercise name</span>
+            <input
+              name="customExerciseName"
+              placeholder="e.g. Cable Y-raise"
+              form="custom-exercise-form"
+            />
+          </label>
+          <div className={styles.fieldGroup}>
+            <span>Track with</span>
+            <SelectField
+              ariaLabel="Track with"
+              defaultValue="weight_reps"
+              form="custom-exercise-form"
+              name="trackingType"
+              options={trackingOptions}
+            />
+          </div>
+          <button
+            disabled={exercisePending}
+            form="custom-exercise-form"
+            type="submit"
+          >
+            {exercisePending ? "Creating…" : "Create exercise"}
+          </button>
+          {exerciseState.message && (
+            <p className={styles.formError}>{exerciseState.message}</p>
+          )}
+          {exerciseState.exercise && (
+            <p className={styles.createdMessage}>
+              {exerciseState.exercise.name} is ready in the library above.
+            </p>
+          )}
         </Disclosure>
 
         {!workout && showSaveGuide && (
           <div className={styles.saveGuide}>
             <Coachmark
               body="Your workout is ready to save. It will return to Workouts as a reusable template."
-              dismiss={() => markGuidance("workout-builder.save-workout.v1", "dismissed")}
+              dismiss={() =>
+                markGuidance("workout-builder.save-workout.v1", "dismissed")
+              }
               label="Keep the plan"
             />
           </div>
         )}
 
-        {workoutState.message && <p className={styles.submitError} role="alert">{workoutState.message}</p>}
-        <button className={styles.saveButton} disabled={workoutPending || selected.length === 0} type="submit">
-          <span>{workoutPending ? "Saving workout…" : workout ? "Save changes" : "Save workout"}</span><ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+        {workoutState.message && (
+          <p className={styles.submitError} role="alert">
+            {workoutState.message}
+          </p>
+        )}
+        <button
+          className={styles.saveButton}
+          disabled={workoutPending || selected.length === 0}
+          type="submit"
+        >
+          <span>
+            {workoutPending
+              ? "Saving workout…"
+              : workout
+                ? "Save changes"
+                : "Save workout"}
+          </span>
+          <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
         </button>
       </form>
 
       {workout && (
-        <form action={archiveWorkout.bind(null, workout.id)} className={styles.archiveForm} onSubmit={(event) => {
-          if (!window.confirm(`Archive ${workout.name}? Your completed sessions will stay in history.`)) event.preventDefault();
-        }}>
+        <form
+          action={archiveWorkout.bind(null, workout.id)}
+          className={styles.archiveForm}
+          onSubmit={(event) => {
+            if (
+              !window.confirm(
+                `Archive ${workout.name}? Your completed sessions will stay in history.`,
+              )
+            )
+              event.preventDefault();
+          }}
+        >
           <button type="submit">Archive workout</button>
           <p>Completed sessions and performance history will not be removed.</p>
         </form>
@@ -370,13 +608,34 @@ function CatalogGroup({
         onClick={() => setUserOpen((current) => !current)}
         type="button"
       >
-        <span><strong>{group.label}</strong><small>{group.exercises.length} available</small></span>
-        <MotionCaretDown animate={{ rotate: open ? 180 : 0 }} aria-hidden="true" initial={false} size={19} transition={{ type: "spring", duration: 0.3, bounce: 0 }} weight="bold" />
+        <span>
+          <strong>{group.label}</strong>
+          <small>{group.exercises.length} available</small>
+        </span>
+        <MotionCaretDown
+          animate={{ rotate: open ? 180 : 0 }}
+          aria-hidden="true"
+          initial={false}
+          size={19}
+          transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+          weight="bold"
+        />
       </button>
       <Collapsible className={styles.catalogList} id={panelId} open={open}>
         {group.exercises.map((exercise) => (
-          <button key={exercise.id} onClick={() => addExercise(exercise)} type="button">
-            <div><strong>{exercise.name}</strong><small>{exercise.isCustom ? "Custom exercise" : trackingLabel(exercise.trackingType)}</small></div>
+          <button
+            key={exercise.id}
+            onClick={() => addExercise(exercise)}
+            type="button"
+          >
+            <div>
+              <strong>{exercise.name}</strong>
+              <small>
+                {exercise.isCustom
+                  ? "Custom exercise"
+                  : trackingLabel(exercise.trackingType)}
+              </small>
+            </div>
             <span>Add</span>
           </button>
         ))}
@@ -385,12 +644,57 @@ function CatalogGroup({
   );
 }
 
-function Coachmark({ body, dismiss, label }: { body: string; dismiss: () => void; label: string }) {
-  return <aside className={styles.coachmark} aria-label="Contextual guidance"><div><span>{label}</span><p>{body}</p></div><button onClick={dismiss} type="button" aria-label="Dismiss tip"><XIcon aria-hidden="true" size={18} weight="bold" /></button></aside>;
+function Coachmark({
+  body,
+  dismiss,
+  label,
+}: {
+  body: string;
+  dismiss: () => void;
+  label: string;
+}) {
+  return (
+    <aside className={styles.coachmark} aria-label="Contextual guidance">
+      <div>
+        <span>{label}</span>
+        <p>{body}</p>
+      </div>
+      <button onClick={dismiss} type="button" aria-label="Dismiss tip">
+        <XIcon aria-hidden="true" size={18} weight="bold" />
+      </button>
+    </aside>
+  );
 }
 
-function NumberField({ label, max, min, onChange, step = 1, value }: { label: string; max: number; min: number; onChange: (value: number) => void; step?: number; value: number }) {
-  return <label><span>{label}</span><input inputMode="numeric" max={max} min={min} onChange={(event) => onChange(Number(event.target.value))} step={step} type="number" value={value} /></label>;
+function NumberField({
+  label,
+  max,
+  min,
+  onChange,
+  step = 1,
+  value,
+}: {
+  label: string;
+  max: number;
+  min: number;
+  onChange: (value: number) => void;
+  step?: number;
+  value: number;
+}) {
+  return (
+    <label>
+      <span>{label}</span>
+      <input
+        inputMode="numeric"
+        max={max}
+        min={min}
+        onChange={(event) => onChange(Number(event.target.value))}
+        step={step}
+        type="number"
+        value={value}
+      />
+    </label>
+  );
 }
 
 function trackingLabel(type: ExerciseCatalogItem["trackingType"]) {

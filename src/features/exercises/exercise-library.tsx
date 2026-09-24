@@ -50,8 +50,7 @@ export function ExerciseLibrary({
   catalog: ExerciseCatalogItem[];
 }) {
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] =
-    useState<ExerciseSourceFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<ExerciseSourceFilter>("all");
   const [exerciseOverrides, setExerciseOverrides] = useState<
     Record<string, ExerciseCatalogItem | null>
   >({});
@@ -73,109 +72,144 @@ export function ExerciseLibrary({
         return [override ?? exercise];
       });
     return filterExercises(combined, search, sourceFilter);
-  }, [archivedCatalog, catalog, exerciseOverrides, exerciseState.exercise, search, sourceFilter]);
+  }, [
+    archivedCatalog,
+    catalog,
+    exerciseOverrides,
+    exerciseState.exercise,
+    search,
+    sourceFilter,
+  ]);
   const groups = useMemo(() => groupExercises(exercises), [exercises]);
 
   return (
     <>
-        <section className={styles.lead}>
-          <p>Exercises</p>
-          <h1>Exercises</h1>
-          <span>Browse the movements available when building a workout.</span>
-        </section>
+      <section className={styles.lead}>
+        <p>Exercises</p>
+        <h1>Exercises</h1>
+        <span>Browse the movements available when building a workout.</span>
+      </section>
 
-        <section className={styles.controls}>
-          <label className={styles.search}>
-            <span aria-hidden="true"><MagnifyingGlassIcon size={19} weight="bold" /></span>
-            <input
-              aria-label="Search exercises"
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search bench, squat, row…"
-              value={search}
-            />
-          </label>
+      <section className={styles.controls}>
+        <label className={styles.search}>
+          <span aria-hidden="true">
+            <MagnifyingGlassIcon size={19} weight="bold" />
+          </span>
+          <input
+            aria-label="Search exercises"
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search bench, squat, row…"
+            value={search}
+          />
+        </label>
 
-          <div className={styles.sourceFilters} aria-label="Filter exercises by source">
-            {sourceFilters.map((filter) => (
-              <button
-                aria-pressed={sourceFilter === filter.value}
-                key={filter.value}
-                onClick={() => setSourceFilter(filter.value)}
-                type="button"
-              >
-                {sourceFilter === filter.value && (
-                  <motion.span
-                    className={styles.sourceFilterIndicator}
-                    layoutId="exercise-source-filter-indicator"
-                    transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-                  />
-                )}
-                <span className={styles.sourceFilterLabel}>{filter.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <Disclosure
-            className={styles.createExercise}
-            contentClassName={styles.createExerciseContent}
-            label="Create a custom exercise"
-          >
-            <form action={exerciseAction}>
-              <label>
-                <span>Exercise name</span>
-                <input
-                  name="customExerciseName"
-                  placeholder="e.g. Cable Y-raise"
-                  required
+        <div
+          className={styles.sourceFilters}
+          aria-label="Filter exercises by source"
+        >
+          {sourceFilters.map((filter) => (
+            <button
+              aria-pressed={sourceFilter === filter.value}
+              key={filter.value}
+              onClick={() => setSourceFilter(filter.value)}
+              type="button"
+            >
+              {sourceFilter === filter.value && (
+                <motion.span
+                  className={styles.sourceFilterIndicator}
+                  layoutId="exercise-source-filter-indicator"
+                  transition={
+                    reduceMotion
+                      ? { duration: 0 }
+                      : { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }
+                  }
                 />
-              </label>
-              <div className={styles.fieldGroup}>
-                <span>Track with</span>
-                <SelectField
-                  ariaLabel="Track with"
-                  defaultValue="weight_reps"
-                  name="trackingType"
-                  options={trackingOptions}
-                />
-              </div>
-              <button disabled={exercisePending} type="submit">
-                {exercisePending ? "Creating…" : "Create exercise"}
-              </button>
-              {exerciseState.message && (
-                <p role="alert">{exerciseState.message}</p>
               )}
-              {exerciseState.exercise && (
-                <p>{exerciseState.exercise.name} is now in your library.</p>
-              )}
-            </form>
-          </Disclosure>
-        </section>
+              <span className={styles.sourceFilterLabel}>{filter.label}</span>
+            </button>
+          ))}
+        </div>
 
-        <section className={styles.catalog}>
-          <header>
-            <div>
-              <span>{sourceFilter === "archived" ? "Archived exercises" : "Available exercises"}</span>
-              <h2 aria-live="polite" aria-atomic="true">
-                {exercises.length} {exercises.length === 1 ? "match" : "matches"}
-              </h2>
+        <Disclosure
+          className={styles.createExercise}
+          contentClassName={styles.createExerciseContent}
+          label="Create a custom exercise"
+        >
+          <form action={exerciseAction}>
+            <label>
+              <span>Exercise name</span>
+              <input
+                name="customExerciseName"
+                placeholder="e.g. Cable Y-raise"
+                required
+              />
+            </label>
+            <div className={styles.fieldGroup}>
+              <span>Track with</span>
+              <SelectField
+                ariaLabel="Track with"
+                defaultValue="weight_reps"
+                name="trackingType"
+                options={trackingOptions}
+              />
             </div>
-            <small>Choose these while creating a workout</small>
-          </header>
+            <button disabled={exercisePending} type="submit">
+              {exercisePending ? "Creating…" : "Create exercise"}
+            </button>
+            {exerciseState.message && (
+              <p role="alert">{exerciseState.message}</p>
+            )}
+            {exerciseState.exercise && (
+              <p>{exerciseState.exercise.name} is now in your library.</p>
+            )}
+          </form>
+        </Disclosure>
+      </section>
 
-          <div className={styles.exerciseList}>
-            <AnimatePresence initial={false} mode="popLayout">
-              {groups.map((group, index) => (
-                <ExerciseGroupSection
-                  defaultOpen={index === 0}
-                  forceOpen={Boolean(search.trim())}
-                  group={group}
-                  key={group.key}
-                  onArchive={(exercise) => setExerciseOverrides((current) => ({ ...current, [exercise.id]: { ...exercise, isArchived: true } }))}
-                  onRestore={(exercise) => setExerciseOverrides((current) => ({ ...current, [exercise.id]: exercise }))}
-                  onUpdate={(exercise) => setExerciseOverrides((current) => ({ ...current, [exercise.id]: exercise }))}
-                  reduceMotion={Boolean(reduceMotion)}
-                />
-              ))}
+      <section className={styles.catalog}>
+        <header>
+          <div>
+            <span>
+              {sourceFilter === "archived"
+                ? "Archived exercises"
+                : "Available exercises"}
+            </span>
+            <h2 aria-live="polite" aria-atomic="true">
+              {exercises.length} {exercises.length === 1 ? "match" : "matches"}
+            </h2>
+          </div>
+          <small>Choose these while creating a workout</small>
+        </header>
+
+        <div className={styles.exerciseList}>
+          <AnimatePresence initial={false} mode="popLayout">
+            {groups.map((group, index) => (
+              <ExerciseGroupSection
+                defaultOpen={index === 0}
+                forceOpen={Boolean(search.trim())}
+                group={group}
+                key={group.key}
+                onArchive={(exercise) =>
+                  setExerciseOverrides((current) => ({
+                    ...current,
+                    [exercise.id]: { ...exercise, isArchived: true },
+                  }))
+                }
+                onRestore={(exercise) =>
+                  setExerciseOverrides((current) => ({
+                    ...current,
+                    [exercise.id]: exercise,
+                  }))
+                }
+                onUpdate={(exercise) =>
+                  setExerciseOverrides((current) => ({
+                    ...current,
+                    [exercise.id]: exercise,
+                  }))
+                }
+                reduceMotion={Boolean(reduceMotion)}
+              />
+            ))}
             {exercises.length === 0 && (
               <motion.div
                 animate={{ opacity: 1 }}
@@ -186,9 +220,9 @@ export function ExerciseLibrary({
                 {emptyMessage(search, sourceFilter)}
               </motion.div>
             )}
-            </AnimatePresence>
-          </div>
-        </section>
+          </AnimatePresence>
+        </div>
+      </section>
     </>
   );
 }
@@ -221,7 +255,10 @@ function ExerciseGroupSection({
       exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
       initial={reduceMotion ? false : { opacity: 0, y: 4 }}
       layout={!reduceMotion}
-      transition={{ duration: reduceMotion ? 0 : 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.18,
+        ease: [0.2, 0.8, 0.2, 1],
+      }}
     >
       <button
         aria-controls={panelId}
@@ -230,7 +267,13 @@ function ExerciseGroupSection({
         onClick={() => setUserOpen((current) => !current)}
         type="button"
       >
-        <span><strong>{group.label}</strong><small>{group.exercises.length} {group.exercises.length === 1 ? "exercise" : "exercises"}</small></span>
+        <span>
+          <strong>{group.label}</strong>
+          <small>
+            {group.exercises.length}{" "}
+            {group.exercises.length === 1 ? "exercise" : "exercises"}
+          </small>
+        </span>
         <MotionCaretDown
           animate={{ rotate: open ? 180 : 0 }}
           aria-hidden="true"
@@ -241,28 +284,30 @@ function ExerciseGroupSection({
         />
       </button>
       <Collapsible className={styles.groupItems} id={panelId} open={open}>
-        {group.exercises.map((exercise) => exercise.isArchived ? (
-          <ArchivedExerciseItem
-            exercise={exercise}
-            key={exercise.id}
-            onRestore={onRestore}
-          />
-        ) : exercise.isCustom ? (
-          <CustomExerciseItem
-            exercise={exercise}
-            key={exercise.id}
-            onArchive={onArchive}
-            onUpdate={onUpdate}
-          />
-        ) : (
-          <article key={exercise.id}>
-            <div>
-              <strong>{exercise.name}</strong>
-              <small>{trackingLabel(exercise.trackingType)}</small>
-            </div>
-            <b className={styles.libraryTag}>Library</b>
-          </article>
-        ))}
+        {group.exercises.map((exercise) =>
+          exercise.isArchived ? (
+            <ArchivedExerciseItem
+              exercise={exercise}
+              key={exercise.id}
+              onRestore={onRestore}
+            />
+          ) : exercise.isCustom ? (
+            <CustomExerciseItem
+              exercise={exercise}
+              key={exercise.id}
+              onArchive={onArchive}
+              onUpdate={onUpdate}
+            />
+          ) : (
+            <article key={exercise.id}>
+              <div>
+                <strong>{exercise.name}</strong>
+                <small>{trackingLabel(exercise.trackingType)}</small>
+              </div>
+              <b className={styles.libraryTag}>Library</b>
+            </article>
+          ),
+        )}
       </Collapsible>
     </motion.section>
   );
@@ -281,12 +326,18 @@ function CustomExerciseItem({
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const archiveTriggerRef = useRef<HTMLButtonElement>(null);
   const [draftName, setDraftName] = useState(exercise.name);
-  const [draftTrackingType, setDraftTrackingType] = useState(exercise.trackingType);
+  const [draftTrackingType, setDraftTrackingType] = useState(
+    exercise.trackingType,
+  );
   const updateAction = async (
     previousState: CustomExerciseState,
     formData: FormData,
   ) => {
-    const nextState = await updateCustomExercise(exercise.id, previousState, formData);
+    const nextState = await updateCustomExercise(
+      exercise.id,
+      previousState,
+      formData,
+    );
     if (nextState.exercise) {
       onUpdate(nextState.exercise);
       setDraftName(nextState.exercise.name);
@@ -299,7 +350,11 @@ function CustomExerciseItem({
     previousState: CustomExerciseState,
     formData: FormData,
   ) => {
-    const nextState = await archiveCustomExercise(exercise.id, previousState, formData);
+    const nextState = await archiveCustomExercise(
+      exercise.id,
+      previousState,
+      formData,
+    );
     if (nextState.archived) onArchive(exercise);
     return nextState;
   };
@@ -345,7 +400,11 @@ function CustomExerciseItem({
           <label>
             <span>Name</span>
             <input
-              aria-describedby={updateState.fieldErrors?.name ? `${panelId}-name-error` : undefined}
+              aria-describedby={
+                updateState.fieldErrors?.name
+                  ? `${panelId}-name-error`
+                  : undefined
+              }
               aria-invalid={Boolean(updateState.fieldErrors?.name)}
               maxLength={120}
               minLength={2}
@@ -355,23 +414,36 @@ function CustomExerciseItem({
               value={draftName}
             />
           </label>
-          {updateState.fieldErrors?.name && <p id={`${panelId}-name-error`}>{updateState.fieldErrors.name}</p>}
+          {updateState.fieldErrors?.name && (
+            <p id={`${panelId}-name-error`}>{updateState.fieldErrors.name}</p>
+          )}
           <div className={styles.fieldGroup}>
             <span>Track with</span>
             <SelectField
               ariaLabel={`Track ${exercise.name} with`}
               disabled={updatePending}
               name="trackingType"
-              onValueChange={(value) => setDraftTrackingType(value as ExerciseCatalogItem["trackingType"])}
+              onValueChange={(value) =>
+                setDraftTrackingType(
+                  value as ExerciseCatalogItem["trackingType"],
+                )
+              }
               options={trackingOptions}
               value={draftTrackingType}
             />
           </div>
-          {updateState.fieldErrors?.trackingType && <p>{updateState.fieldErrors.trackingType}</p>}
+          {updateState.fieldErrors?.trackingType && (
+            <p>{updateState.fieldErrors.trackingType}</p>
+          )}
           <button disabled={updatePending} type="submit">
             {updatePending ? "Saving…" : "Save changes"}
           </button>
-          <p aria-live="polite" role={updateState.message ? "alert" : undefined}>{updateState.message}</p>
+          <p
+            aria-live="polite"
+            role={updateState.message ? "alert" : undefined}
+          >
+            {updateState.message}
+          </p>
         </form>
 
         <div className={styles.archiveExercise}>
@@ -383,7 +455,9 @@ function CustomExerciseItem({
           >
             Archive custom exercise
           </button>
-          <small>Hide it from future workouts without losing its history.</small>
+          <small>
+            Hide it from future workouts without losing its history.
+          </small>
         </div>
       </Collapsible>
 
@@ -415,7 +489,11 @@ function ArchivedExerciseItem({
     previousState: CustomExerciseState,
     formData: FormData,
   ) => {
-    const nextState = await restoreCustomExercise(exercise.id, previousState, formData);
+    const nextState = await restoreCustomExercise(
+      exercise.id,
+      previousState,
+      formData,
+    );
     if (nextState.exercise) onRestore(nextState.exercise);
     return nextState;
   };
@@ -425,7 +503,9 @@ function ArchivedExerciseItem({
   );
 
   return (
-    <article className={`${styles.customCatalogItem} ${styles.archivedCatalogItem}`}>
+    <article
+      className={`${styles.customCatalogItem} ${styles.archivedCatalogItem}`}
+    >
       <div className={styles.customSummary}>
         <div>
           <strong>{exercise.name}</strong>
@@ -441,7 +521,9 @@ function ArchivedExerciseItem({
         </div>
       </div>
       {restoreState.message && (
-        <p className={styles.restoreError} role="alert">{restoreState.message}</p>
+        <p className={styles.restoreError} role="alert">
+          {restoreState.message}
+        </p>
       )}
     </article>
   );

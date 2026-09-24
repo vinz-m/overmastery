@@ -15,13 +15,25 @@ export default async function ExerciseHistoryPage({
   const { exerciseId } = await params;
   if (!uuidPattern.test(exerciseId)) notFound();
 
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const userPromise = requireUser();
   const [user, timeline] = await Promise.all([
     userPromise,
-    getExerciseTimeline(supabase, userId, exerciseId, userPromise.then((user) => user.unitSystem)),
+    getExerciseTimeline(
+      supabase,
+      userId,
+      exerciseId,
+      userPromise.then((user) => user.unitSystem),
+    ),
   ]);
   if (!timeline) notFound();
 
-  return <PageTransition><ExerciseHistoryDetail timeline={timeline} unitSystem={user.unitSystem} /></PageTransition>;
+  return (
+    <PageTransition>
+      <ExerciseHistoryDetail timeline={timeline} unitSystem={user.unitSystem} />
+    </PageTransition>
+  );
 }

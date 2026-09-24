@@ -50,89 +50,170 @@ export function ProfileSettings({
   timeZones: string[];
   unitSystem: UnitSystem;
 }) {
-  const [profileState, profileAction, profilePending] = useActionState(updateProfile, initialState);
-  const [guidanceState, guidanceAction, guidancePending] = useActionState(resetGuidance, initialState);
-  const [passwordState, passwordAction, passwordPending] = useActionState(changePassword, initialState);
+  const [profileState, profileAction, profilePending] = useActionState(
+    updateProfile,
+    initialState,
+  );
+  const [guidanceState, guidanceAction, guidancePending] = useActionState(
+    resetGuidance,
+    initialState,
+  );
+  const [passwordState, passwordAction, passwordPending] = useActionState(
+    changePassword,
+    initialState,
+  );
 
   return (
     <main className={styles.tabContent}>
-        <section className={styles.lead}>
-          <p>Profile</p>
-          <h1>Profile</h1>
-          <span>Manage your training preferences and account.</span>
-        </section>
+      <section className={styles.lead}>
+        <p>Profile</p>
+        <h1>Profile</h1>
+        <span>Manage your training preferences and account.</span>
+      </section>
 
-        {!hasSeenGuidance(guidance, "profile.overview.v1") && (
-          <ContextualTip
-            body="Set your theme, units, and time zone here. You can restart these tips whenever you need a refresher."
-            guidanceKey="profile.overview.v1"
-            title="Make the app yours"
-          />
-        )}
+      {!hasSeenGuidance(guidance, "profile.overview.v1") && (
+        <ContextualTip
+          body="Set your theme, units, and time zone here. You can restart these tips whenever you need a refresher."
+          guidanceKey="profile.overview.v1"
+          title="Make the app yours"
+        />
+      )}
 
-        <section className={styles.identity}>
-          <div><span>Signed in as</span><strong>{email}</strong></div>
-          {createdAt && <small>Member since {formatMemberDate(createdAt)}</small>}
-        </section>
+      <section className={styles.identity}>
+        <div>
+          <span>Signed in as</span>
+          <strong>{email}</strong>
+        </div>
+        {createdAt && <small>Member since {formatMemberDate(createdAt)}</small>}
+      </section>
 
-        <ThemeSettings />
+      <ThemeSettings />
 
-        <section className={styles.settingsSection}>
-          <header><span>Training</span><h2>Preferences</h2></header>
-          <form action={profileAction}>
-            <Field error={profileState.fieldErrors?.displayName} label="Display name">
-              <input autoComplete="name" defaultValue={displayName} maxLength={80} name="displayName" required />
-            </Field>
-            <div className={styles.field}>
-              <span>Weight display</span>
-              <SelectField
-                ariaLabel="Weight display"
-                defaultValue={unitSystem}
-                name="unitSystem"
-                options={unitOptions}
-              />
-              {profileState.fieldErrors?.unitSystem && <small role="alert">{profileState.fieldErrors.unitSystem}</small>}
-            </div>
-            <Field error={profileState.fieldErrors?.timeZone} label="Time zone">
-              <input defaultValue={timeZone} list="time-zones" name="timeZone" required />
-              <datalist id="time-zones">
-                {timeZones.map((zone) => <option key={zone} value={zone} />)}
-              </datalist>
-            </Field>
-            <p className={styles.help}>Choose the units you prefer. Your previous sessions will use them too.</p>
-            <ActionMessage state={profileState} />
-            <button disabled={profilePending} type="submit">{profilePending ? "Saving…" : "Save settings"}<ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></button>
-          </form>
-        </section>
+      <section className={styles.settingsSection}>
+        <header>
+          <span>Training</span>
+          <h2>Preferences</h2>
+        </header>
+        <form action={profileAction}>
+          <Field
+            error={profileState.fieldErrors?.displayName}
+            label="Display name"
+          >
+            <input
+              autoComplete="name"
+              defaultValue={displayName}
+              maxLength={80}
+              name="displayName"
+              required
+            />
+          </Field>
+          <div className={styles.field}>
+            <span>Weight display</span>
+            <SelectField
+              ariaLabel="Weight display"
+              defaultValue={unitSystem}
+              name="unitSystem"
+              options={unitOptions}
+            />
+            {profileState.fieldErrors?.unitSystem && (
+              <small role="alert">{profileState.fieldErrors.unitSystem}</small>
+            )}
+          </div>
+          <Field error={profileState.fieldErrors?.timeZone} label="Time zone">
+            <input
+              defaultValue={timeZone}
+              list="time-zones"
+              name="timeZone"
+              required
+            />
+            <datalist id="time-zones">
+              {timeZones.map((zone) => (
+                <option key={zone} value={zone} />
+              ))}
+            </datalist>
+          </Field>
+          <p className={styles.help}>
+            Choose the units you prefer. Your previous sessions will use them
+            too.
+          </p>
+          <ActionMessage state={profileState} />
+          <button disabled={profilePending} type="submit">
+            {profilePending ? "Saving…" : "Save settings"}
+            <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+          </button>
+        </form>
+      </section>
 
-        <section className={styles.settingsSection}>
-          <header><span>Guidance</span><h2>Contextual tips</h2></header>
-          <form action={guidanceAction}>
-            <p className={styles.help}>Show dismissed onboarding tips again when you reach their relevant screen.</p>
-            <ActionMessage state={guidanceState} />
-            <button className={styles.secondaryButton} disabled={guidancePending} type="submit">{guidancePending ? "Resetting…" : "Restart guidance"}</button>
-          </form>
-        </section>
+      <section className={styles.settingsSection}>
+        <header>
+          <span>Guidance</span>
+          <h2>Contextual tips</h2>
+        </header>
+        <form action={guidanceAction}>
+          <p className={styles.help}>
+            Show dismissed onboarding tips again when you reach their relevant
+            screen.
+          </p>
+          <ActionMessage state={guidanceState} />
+          <button
+            className={styles.secondaryButton}
+            disabled={guidancePending}
+            type="submit"
+          >
+            {guidancePending ? "Resetting…" : "Restart guidance"}
+          </button>
+        </form>
+      </section>
 
-        <section className={styles.settingsSection}>
-          <header><span>Security</span><h2>Change password</h2></header>
-          <form action={passwordAction}>
-            <Field error={passwordState.fieldErrors?.currentPassword} label="Current password">
-              <input autoComplete="current-password" name="currentPassword" type="password" required />
-            </Field>
-            <Field error={passwordState.fieldErrors?.newPassword} label="New password">
-              <input autoComplete="new-password" minLength={8} name="newPassword" type="password" required />
-            </Field>
-            <p className={styles.help}>Because you are already signed in, this change verifies your current password and does not send email.</p>
-            <ActionMessage state={passwordState} />
-            <button className={styles.secondaryButton} disabled={passwordPending} type="submit">{passwordPending ? "Changing…" : "Change password"}</button>
-          </form>
-        </section>
+      <section className={styles.settingsSection}>
+        <header>
+          <span>Security</span>
+          <h2>Change password</h2>
+        </header>
+        <form action={passwordAction}>
+          <Field
+            error={passwordState.fieldErrors?.currentPassword}
+            label="Current password"
+          >
+            <input
+              autoComplete="current-password"
+              name="currentPassword"
+              type="password"
+              required
+            />
+          </Field>
+          <Field
+            error={passwordState.fieldErrors?.newPassword}
+            label="New password"
+          >
+            <input
+              autoComplete="new-password"
+              minLength={8}
+              name="newPassword"
+              type="password"
+              required
+            />
+          </Field>
+          <p className={styles.help}>
+            Because you are already signed in, this change verifies your current
+            password and does not send email.
+          </p>
+          <ActionMessage state={passwordState} />
+          <button
+            className={styles.secondaryButton}
+            disabled={passwordPending}
+            type="submit"
+          >
+            {passwordPending ? "Changing…" : "Change password"}
+          </button>
+        </form>
+      </section>
 
-        <section className={styles.signOutSection}>
-          <form action={signOut}><button type="submit">Sign out</button></form>
-        </section>
-
+      <section className={styles.signOutSection}>
+        <form action={signOut}>
+          <button type="submit">Sign out</button>
+        </form>
+      </section>
     </main>
   );
 }
@@ -144,8 +225,18 @@ const themes: Array<{
   value: ThemePreference;
 }> = [
   { description: "Always bright", icon: "sun", label: "Light", value: "light" },
-  { description: "Match this device", icon: "system", label: "System", value: "system" },
-  { description: "Easy on the eyes", icon: "moon", label: "Dark", value: "dark" },
+  {
+    description: "Match this device",
+    icon: "system",
+    label: "System",
+    value: "system",
+  },
+  {
+    description: "Easy on the eyes",
+    icon: "moon",
+    label: "Dark",
+    value: "dark",
+  },
 ];
 
 function ThemeSettings() {
@@ -153,7 +244,10 @@ function ThemeSettings() {
 
   return (
     <section className={styles.settingsSection}>
-      <header><span>Appearance</span><h2>Theme</h2></header>
+      <header>
+        <span>Appearance</span>
+        <h2>Theme</h2>
+      </header>
       <div className={styles.themeCard}>
         <fieldset className={styles.themeOptions}>
           <legend className={styles.visuallyHidden}>Choose an app theme</legend>
@@ -184,7 +278,9 @@ function ThemeSettings() {
             );
           })}
         </fieldset>
-        <p className={styles.help}>This preference is saved on this device and applies immediately.</p>
+        <p className={styles.help}>
+          This preference is saved on this device and applies immediately.
+        </p>
       </div>
     </section>
   );
@@ -200,14 +296,38 @@ function ThemeIcon({ type }: { type: "moon" | "sun" | "system" }) {
   return <SunIcon size={22} weight="regular" />;
 }
 
-function Field({ children, error, label }: { children: React.ReactNode; error?: string; label: string }) {
-  return <label className={styles.field}><span>{label}</span>{children}{error && <small role="alert">{error}</small>}</label>;
+function Field({
+  children,
+  error,
+  label,
+}: {
+  children: React.ReactNode;
+  error?: string;
+  label: string;
+}) {
+  return (
+    <label className={styles.field}>
+      <span>{label}</span>
+      {children}
+      {error && <small role="alert">{error}</small>}
+    </label>
+  );
 }
 
 function ActionMessage({ state }: { state: ProfileActionState }) {
-  return state.message ? <p className={state.success ? styles.success : styles.error} role={state.success ? "status" : "alert"}>{state.message}</p> : null;
+  return state.message ? (
+    <p
+      className={state.success ? styles.success : styles.error}
+      role={state.success ? "status" : "alert"}
+    >
+      {state.message}
+    </p>
+  ) : null;
 }
 
 function formatMemberDate(value: string) {
-  return new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
 }

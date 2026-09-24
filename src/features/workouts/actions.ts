@@ -7,10 +7,7 @@ import { updateGuidanceMetadata } from "@/features/guidance/server";
 import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
-import type {
-  ExerciseCatalogItem,
-  ExerciseTrackingType,
-} from "./types";
+import type { ExerciseCatalogItem, ExerciseTrackingType } from "./types";
 import { isWorkoutId, readWorkoutDraft } from "./workout-draft";
 
 export type CreateWorkoutState = {
@@ -120,20 +117,23 @@ export async function updateWorkout(
   _previousState: CreateWorkoutState,
   formData: FormData,
 ): Promise<CreateWorkoutState> {
-  if (!isWorkoutId(workoutId)) return { message: "This workout could not be saved." };
+  if (!isWorkoutId(workoutId))
+    return { message: "This workout could not be saved." };
 
   const userId = await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   const exercises = readWorkoutDraft(formData.get("exercises"));
   const fieldErrors: CreateWorkoutState["fieldErrors"] = {};
-  if (name.length < 2 || name.length > 120) fieldErrors.name = "Use between 2 and 120 characters.";
+  if (name.length < 2 || name.length > 120)
+    fieldErrors.name = "Use between 2 and 120 characters.";
   if (!exercises) fieldErrors.exercises = "Add at least one valid exercise.";
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
 
   const supabase = await createClient();
   const { data: workout, error: lookupError } = await supabase
     .from("workout_templates")
-    .select(`
+    .select(
+      `
       id,
       name,
       workout_template_exercises (
@@ -144,53 +144,75 @@ export async function updateWorkout(
         target_rep_min,
         target_sets
       )
-    `)
+    `,
+    )
     .eq("id", workoutId)
     .eq("user_id", userId)
     .is("archived_at", null)
     .maybeSingle();
-  if (lookupError || !workout) return { message: "This workout is no longer available." };
+  if (lookupError || !workout)
+    return { message: "This workout is no longer available." };
 
   const { error: nameError } = await supabase
     .from("workout_templates")
     .update({ name })
     .eq("id", workout.id);
   if (nameError) {
-    return { message: nameError.code === "23505" ? "You already have a workout with that name." : "The workout could not be saved. Try again." };
+    return {
+      message:
+        nameError.code === "23505"
+          ? "You already have a workout with that name."
+          : "The workout could not be saved. Try again.",
+    };
   }
 
   const { error: removeError } = await supabase
     .from("workout_template_exercises")
     .delete()
     .eq("workout_template_id", workout.id);
-  if (removeError) return { message: "The workout exercises could not be updated. Try again." };
+  if (removeError)
+    return {
+      message: "The workout exercises could not be updated. Try again.",
+    };
 
   const { error: insertError } = await supabase
     .from("workout_template_exercises")
-    .insert(exercises!.map((exercise, position) => ({
-      default_rest_seconds: exercise.defaultRestSeconds,
-      exercise_id: exercise.id,
-      position,
-      target_rep_max: exercise.targetRepMax,
-      target_rep_min: exercise.targetRepMin,
-      target_sets: exercise.targetSets,
-      workout_template_id: workout.id,
-    })));
+    .insert(
+      exercises!.map((exercise, position) => ({
+        default_rest_seconds: exercise.defaultRestSeconds,
+        exercise_id: exercise.id,
+        position,
+        target_rep_max: exercise.targetRepMax,
+        target_rep_min: exercise.targetRepMin,
+        target_sets: exercise.targetSets,
+        workout_template_id: workout.id,
+      })),
+    );
   if (insertError) {
-    const previousExercises = workout.workout_template_exercises.map((exercise) => ({
-      default_rest_seconds: exercise.default_rest_seconds,
-      exercise_id: exercise.exercise_id,
-      position: exercise.position,
-      target_rep_max: exercise.target_rep_max,
-      target_rep_min: exercise.target_rep_min,
-      target_sets: exercise.target_sets,
-      workout_template_id: workout.id,
-    }));
+    const previousExercises = workout.workout_template_exercises.map(
+      (exercise) => ({
+        default_rest_seconds: exercise.default_rest_seconds,
+        exercise_id: exercise.exercise_id,
+        position: exercise.position,
+        target_rep_max: exercise.target_rep_max,
+        target_rep_min: exercise.target_rep_min,
+        target_sets: exercise.target_sets,
+        workout_template_id: workout.id,
+      }),
+    );
     if (previousExercises.length > 0) {
-      await supabase.from("workout_template_exercises").insert(previousExercises);
+      await supabase
+        .from("workout_template_exercises")
+        .insert(previousExercises);
     }
-    await supabase.from("workout_templates").update({ name: workout.name }).eq("id", workout.id);
-    return { message: "The workout exercises could not be updated. Your previous plan was kept; try again." };
+    await supabase
+      .from("workout_templates")
+      .update({ name: workout.name })
+      .eq("id", workout.id);
+    return {
+      message:
+        "The workout exercises could not be updated. Your previous plan was kept; try again.",
+    };
   }
 
   revalidatePath("/");

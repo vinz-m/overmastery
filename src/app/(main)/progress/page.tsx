@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { PageTransition } from "@/features/navigation/page-transition";
 
 export default async function ProgressPage() {
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const userPromise = requireUser();
   const [user, { exercises, sessions }] = await Promise.all([
     userPromise,

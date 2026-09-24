@@ -14,7 +14,8 @@ export function useDismissibleDetails() {
     if (!details) return;
 
     const closeOnOutsidePress = (event: PointerEvent) => {
-      if (details.open && !details.contains(event.target as Node)) details.open = false;
+      if (details.open && !details.contains(event.target as Node))
+        details.open = false;
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || !details.open) return;

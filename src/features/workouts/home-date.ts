@@ -83,7 +83,13 @@ export function trainingWeek(
 
   const days: TrainingWeekDay[] = weekdayLabels.map((label, index) => {
     const key = addDays(monday, index);
-    return { isFuture: key > today, isToday: key === today, key, label, trained: trainedDays.has(key) };
+    return {
+      isFuture: key > today,
+      isToday: key === today,
+      key,
+      label,
+      trained: trainedDays.has(key),
+    };
   });
 
   return { days, lastWeek, thisWeek };

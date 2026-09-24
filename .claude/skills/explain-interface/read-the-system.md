@@ -16,40 +16,61 @@ Run them in this order. Tokens first, because a page that hands you its custom p
 
 ```js
 const html = document.documentElement;
-const res = performance.getEntriesByType('resource').map(r => r.name);
-const any = re => res.some(n => re.test(n));
-const attr = sel => !!document.querySelector(sel);
+const res = performance.getEntriesByType("resource").map((r) => r.name);
+const any = (re) => res.some((n) => re.test(n));
+const attr = (sel) => !!document.querySelector(sel);
 ({
   framework: {
     next: !!window.__NEXT_DATA__ || any(/\/_next\/static/),
-    nextAppRouter: typeof self.__next_f !== 'undefined',
+    nextAppRouter: typeof self.__next_f !== "undefined",
     nuxt: !!window.__NUXT__ || any(/\/_nuxt\//),
     remix: !!window.__remixContext,
     gatsby: !!window.___gatsby,
-    astro: attr('astro-island, [data-astro-cid]'),
+    astro: attr("astro-island, [data-astro-cid]"),
     svelte: attr('[class*="svelte-"]') || any(/\/_app\/immutable\//),
-    angular: attr('[ng-version]'),
-    reactFiber: Object.keys(document.body.firstElementChild ?? {}).some(k => k.startsWith('__react')),
+    angular: attr("[ng-version]"),
+    reactFiber: Object.keys(document.body.firstElementChild ?? {}).some((k) =>
+      k.startsWith("__react"),
+    ),
   },
   styling: {
-    tailwind: getComputedStyle(html).getPropertyValue('--tw-ring-offset-width') !== ''
-              || !!document.querySelector('[class*="bg-linear-to"], [class*="bg-gradient-to"]'),
+    tailwind:
+      getComputedStyle(html).getPropertyValue("--tw-ring-offset-width") !==
+        "" ||
+      !!document.querySelector(
+        '[class*="bg-linear-to"], [class*="bg-gradient-to"]',
+      ),
     tailwindV4: !!document.querySelector('[class*="bg-linear-to"]'),
     cssModules: attr('[class*="_"][class*="__"]'),
-    styledComponents: attr('[class^="sc-"]') || attr('style[data-styled]'),
+    styledComponents: attr('[class^="sc-"]') || attr("style[data-styled]"),
     emotion: attr('[class^="css-"]'),
   },
   components: {
-    radix: attr('[data-radix-popper-content-wrapper], [data-radix-scroll-area-viewport]')
-           || !!document.querySelector('[data-slot], [data-state][data-side]'),
+    radix:
+      attr(
+        "[data-radix-popper-content-wrapper], [data-radix-scroll-area-viewport]",
+      ) || !!document.querySelector("[data-slot], [data-state][data-side]"),
     baseUi: attr('[data-base-ui-portal], [class*="base-ui"]'),
-    headlessUi: attr('[data-headlessui-state]'),
+    headlessUi: attr("[data-headlessui-state]"),
     mui: attr('[class*="Mui"]'),
-    arkOrChakra: attr('[data-scope][data-part]'),
+    arkOrChakra: attr("[data-scope][data-part]"),
   },
-  motion: { animationsRunning: document.getAnimations().length, gsap: !!window.gsap },
-  images: { nextImage: any(/\/_next\/image\?/), modernFormats: [...document.images].some(i => /\.(avif|webp)/.test(i.currentSrc)), srcset: [...document.images].filter(i => i.srcset).length },
-  fonts: { count: document.fonts.size, variable: [...document.fonts].some(f => String(f.weight).includes(' ')), selfHosted: !any(/fonts\.g(oogleapis|static)\.com/) },
+  motion: {
+    animationsRunning: document.getAnimations().length,
+    gsap: !!window.gsap,
+  },
+  images: {
+    nextImage: any(/\/_next\/image\?/),
+    modernFormats: [...document.images].some((i) =>
+      /\.(avif|webp)/.test(i.currentSrc),
+    ),
+    srcset: [...document.images].filter((i) => i.srcset).length,
+  },
+  fonts: {
+    count: document.fonts.size,
+    variable: [...document.fonts].some((f) => String(f.weight).includes(" ")),
+    selfHosted: !any(/fonts\.g(oogleapis|static)\.com/),
+  },
 });
 ```
 
@@ -58,13 +79,21 @@ Two rules. A fingerprint is not a fact, so give the evidence: `/_next/static` in
 ## Tokens
 
 ```js
-const tokens = {}; const unreadable = [];
+const tokens = {};
+const unreadable = [];
 for (const sheet of document.styleSheets) {
-  let rules; try { rules = sheet.cssRules } catch { unreadable.push(sheet.href); continue }
+  let rules;
+  try {
+    rules = sheet.cssRules;
+  } catch {
+    unreadable.push(sheet.href);
+    continue;
+  }
   for (const r of rules ?? []) {
-    if (r.selectorText === ':root' || r.selectorText === 'html') {
+    if (r.selectorText === ":root" || r.selectorText === "html") {
       for (const prop of r.style) {
-        if (prop.startsWith('--')) tokens[prop] = r.style.getPropertyValue(prop).trim();
+        if (prop.startsWith("--"))
+          tokens[prop] = r.style.getPropertyValue(prop).trim();
       }
     }
   }
@@ -80,7 +109,7 @@ Leaf text nodes only, so a wrapper's inherited size is not counted as its own st
 
 ```js
 const seen = new Map();
-for (const el of document.querySelectorAll('*')) {
+for (const el of document.querySelectorAll("*")) {
   if (el.children.length || !el.textContent?.trim()) continue;
   const s = getComputedStyle(el);
   const key = `${parseFloat(s.fontSize)}px  w${s.fontWeight}  lh ${s.lineHeight}  ls ${s.letterSpacing}`;
@@ -95,9 +124,16 @@ Sorted by usage, so the body size is first and the one-offs last. Derive the rat
 
 ```js
 const vals = new Map();
-for (const el of document.querySelectorAll('*')) {
+for (const el of document.querySelectorAll("*")) {
   const s = getComputedStyle(el);
-  for (const p of ['paddingTop', 'paddingLeft', 'marginTop', 'marginLeft', 'gap', 'rowGap']) {
+  for (const p of [
+    "paddingTop",
+    "paddingLeft",
+    "marginTop",
+    "marginLeft",
+    "gap",
+    "rowGap",
+  ]) {
     const v = parseFloat(s[p]);
     if (v > 0) vals.set(v, (vals.get(v) ?? 0) + 1);
   }
@@ -112,13 +148,13 @@ Look for the base unit that divides most values, then check `better-layout`'s gr
 ```js
 const grab = (prop, skip) => {
   const m = new Map();
-  for (const el of document.querySelectorAll('*')) {
+  for (const el of document.querySelectorAll("*")) {
     const v = getComputedStyle(el)[prop];
     if (v && v !== skip) m.set(v, (m.get(v) ?? 0) + 1);
   }
   return [...m].sort((a, b) => b[1] - a[1]);
 };
-({ radius: grab('borderRadius', '0px'), shadow: grab('boxShadow', 'none') });
+({ radius: grab("borderRadius", "0px"), shadow: grab("boxShadow", "none") });
 ```
 
 Count the distinct shadows. One or two recipes is a system; nine is a page where everyone invented their own elevation.
@@ -127,9 +163,9 @@ Count the distinct shadows. One or two recipes is a system; nine is a page where
 
 ```js
 const t = new Map();
-for (const el of document.querySelectorAll('*')) {
+for (const el of document.querySelectorAll("*")) {
   const s = getComputedStyle(el);
-  if (s.transitionDuration === '0s') continue;
+  if (s.transitionDuration === "0s") continue;
   const key = `${s.transitionProperty}  ${s.transitionDuration}  ${s.transitionTimingFunction}`;
   t.set(key, (t.get(key) ?? 0) + 1);
 }
@@ -141,13 +177,27 @@ for (const el of document.querySelectorAll('*')) {
 ## Breakpoints
 
 ```js
-const bp = new Set(); const unreadable = [];
+const bp = new Set();
+const unreadable = [];
 for (const sheet of document.styleSheets) {
-  let rules; try { rules = sheet.cssRules } catch { unreadable.push(sheet.href); continue }
-  const walk = list => { for (const r of list ?? []) {
-    if (r.media) { for (const m of r.media) { const hit = m.match(/(min|max)-width:\s*([\d.]+)(px|r?em)/); if (hit) bp.add(hit[0]) } }
-    if (r.cssRules) walk(r.cssRules);
-  }};
+  let rules;
+  try {
+    rules = sheet.cssRules;
+  } catch {
+    unreadable.push(sheet.href);
+    continue;
+  }
+  const walk = (list) => {
+    for (const r of list ?? []) {
+      if (r.media) {
+        for (const m of r.media) {
+          const hit = m.match(/(min|max)-width:\s*([\d.]+)(px|r?em)/);
+          if (hit) bp.add(hit[0]);
+        }
+      }
+      if (r.cssRules) walk(r.cssRules);
+    }
+  };
   walk(rules);
 }
 ({ breakpoints: [...bp].sort(), unreadable });
@@ -159,10 +209,12 @@ Compare against the framework defaults. Breakpoints at exactly `640/768/1024/128
 
 ```js
 ({
-  loaded: [...document.fonts].map(f => `${f.family} ${f.weight} ${f.style} ${f.status}`),
+  loaded: [...document.fonts].map(
+    (f) => `${f.family} ${f.weight} ${f.style} ${f.status}`,
+  ),
   bodyStack: getComputedStyle(document.body).fontFamily,
-  variable: [...document.fonts].some(f => String(f.weight).includes(' ')),
-  themeClass: document.documentElement.className || '(none)',
+  variable: [...document.fonts].some((f) => String(f.weight).includes(" ")),
+  themeClass: document.documentElement.className || "(none)",
   colorScheme: getComputedStyle(document.documentElement).colorScheme,
 });
 ```

@@ -8,7 +8,8 @@ export function selectNextWorkout<TWorkout extends WorkoutTrainingHistory>(
   return workouts.reduce<TWorkout | undefined>((next, workout) => {
     if (!next) return workout;
 
-    return trainingTime(workout.lastTrainedAt) < trainingTime(next.lastTrainedAt)
+    return trainingTime(workout.lastTrainedAt) <
+      trainingTime(next.lastTrainedAt)
       ? workout
       : next;
   }, undefined);

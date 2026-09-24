@@ -13,7 +13,10 @@ export default async function WorkoutsPage({
 }: {
   searchParams: Promise<{ view?: string | string[] }>;
 }) {
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const [user, params, overview, catalog, archivedCatalog] = await Promise.all([
     requireUser(),
     searchParams,

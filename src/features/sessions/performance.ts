@@ -3,7 +3,11 @@ import type {
   PreviousPerformance,
   TrackingType,
 } from "./types";
-import { formatDisplayDelta, loadUnit, type UnitSystem } from "../../lib/units.ts";
+import {
+  formatDisplayDelta,
+  loadUnit,
+  type UnitSystem,
+} from "../../lib/units.ts";
 
 export type PerformanceComparison = {
   label: string;

@@ -31,11 +31,13 @@ export type HistorySession = {
 
 export type ExerciseTimeline = {
   exerciseId: string;
-  exposures: Array<HistoryExercise & {
-    endedAt: string;
-    sessionId: string;
-    templateName: string;
-  }>;
+  exposures: Array<
+    HistoryExercise & {
+      endedAt: string;
+      sessionId: string;
+      templateName: string;
+    }
+  >;
   name: string;
   trackingType: TrackingType;
 };

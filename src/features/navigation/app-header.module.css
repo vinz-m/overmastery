@@ -1,9 +1,58 @@
-.header { display: flex; align-items: center; justify-content: space-between; min-height: 94px; padding: 24px 28px; }
-.brand { min-height: 44px; display: inline-flex; gap: 10px; align-items: center; text-decoration: none; font-size: 19px; font-weight: 600; letter-spacing: -.7px; }
-.mark { width: 48px; height: 20px; flex: none; background: url("/brand/overmastery-mark-on-light.svg?v=horizontal") center / contain no-repeat; }
-:global(:root[data-theme="dark"]) .mark { background-image: url("/brand/overmastery-mark-on-dark.svg?v=horizontal"); }
-.wordOver { color: var(--brand-o); }
-.wordMastery { color: var(--brand-m); }
-.avatar { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 600; }
-@media (hover: hover) { .avatar:hover { background: var(--accent-soft); color: var(--accent); } }
-@media (max-width: 600px) { .header { min-height: 80px; padding: 18px 20px; } }
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 94px;
+  padding: 24px 28px;
+}
+.brand {
+  min-height: 44px;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+}
+.mark {
+  width: 48px;
+  height: 20px;
+  flex: none;
+  background: url("/brand/overmastery-mark-on-light.svg?v=horizontal") center /
+    contain no-repeat;
+}
+:global(:root[data-theme="dark"]) .mark {
+  background-image: url("/brand/overmastery-mark-on-dark.svg?v=horizontal");
+}
+.wordOver {
+  color: var(--brand-o);
+}
+.wordMastery {
+  color: var(--brand-m);
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .avatar:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+@media (max-width: 600px) {
+  .header {
+    min-height: 80px;
+    padding: 18px 20px;
+  }
+}

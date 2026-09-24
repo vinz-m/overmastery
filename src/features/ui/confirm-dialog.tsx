@@ -131,7 +131,11 @@ export function ConfirmDialog({
           >
             {cancelLabel}
           </button>
-          <button className={`${styles.confirm} ${styles[intent]}`} disabled={pending} type="submit">
+          <button
+            className={`${styles.confirm} ${styles[intent]}`}
+            disabled={pending}
+            type="submit"
+          >
             {pending ? pendingLabel : confirmLabel}
           </button>
         </form>

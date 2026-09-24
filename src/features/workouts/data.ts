@@ -18,14 +18,13 @@ const supportedTrackingTypes = [
 const globalExerciseCacheTtlMs = 60 * 60 * 1000;
 
 type CatalogRows = Awaited<ReturnType<typeof fetchGlobalExercises>>;
-let globalExerciseCache:
-  | { expiresAt: number; rows: CatalogRows }
-  | undefined;
+let globalExerciseCache: { expiresAt: number; rows: CatalogRows } | undefined;
 
 async function fetchGlobalExercises(supabase: Client) {
   const { data, error } = await supabase
     .from("exercises")
-    .select(`
+    .select(
+      `
       id,
       name,
       owner_user_id,
@@ -35,7 +34,8 @@ async function fetchGlobalExercises(supabase: Client) {
         role,
         muscle_groups ( name, slug )
       )
-    `)
+    `,
+    )
     .is("archived_at", null)
     .is("owner_user_id", null)
     .in("tracking_type", supportedTrackingTypes)
@@ -48,7 +48,8 @@ async function fetchGlobalExercises(supabase: Client) {
 async function fetchCustomExercises(supabase: Client, userId: string) {
   const { data, error } = await supabase
     .from("exercises")
-    .select(`
+    .select(
+      `
       id,
       name,
       owner_user_id,
@@ -58,7 +59,8 @@ async function fetchCustomExercises(supabase: Client, userId: string) {
         role,
         muscle_groups ( name, slug )
       )
-    `)
+    `,
+    )
     .is("archived_at", null)
     .eq("owner_user_id", userId)
     .in("tracking_type", supportedTrackingTypes)
@@ -88,20 +90,22 @@ export async function getExerciseCatalog(supabase: Client, userId: string) {
     fetchCustomExercises(supabase, userId),
   ]);
 
-  return [...globalExercises, ...customExercises].map((exercise) => {
-    const primaryMuscle = [...exercise.exercise_muscles]
-      .sort((left, right) => left.position - right.position)
-      .find((muscle) => muscle.role === "primary")?.muscle_groups;
+  return [...globalExercises, ...customExercises]
+    .map((exercise) => {
+      const primaryMuscle = [...exercise.exercise_muscles]
+        .sort((left, right) => left.position - right.position)
+        .find((muscle) => muscle.role === "primary")?.muscle_groups;
 
-    return {
-      id: exercise.id,
-      isArchived: false,
-      isCustom: exercise.owner_user_id === userId,
-      name: exercise.name,
-      primaryMuscle: primaryMuscle ?? undefined,
-      trackingType: exercise.tracking_type,
-    };
-  }).sort((left, right) => left.name.localeCompare(right.name));
+      return {
+        id: exercise.id,
+        isArchived: false,
+        isCustom: exercise.owner_user_id === userId,
+        name: exercise.name,
+        primaryMuscle: primaryMuscle ?? undefined,
+        trackingType: exercise.tracking_type,
+      };
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export async function getArchivedCustomExercises(
@@ -131,12 +135,18 @@ export async function getArchivedCustomExercises(
 const recentTrainingWindowMs = 15 * 24 * 60 * 60 * 1000;
 
 export async function getWorkoutOverview(supabase: Client) {
-  const recentSince = new Date(Date.now() - recentTrainingWindowMs).toISOString();
-  const [{ data, error }, { data: activeData, error: activeError }, { data: historyData, error: historyError }] =
-    await Promise.all([
-      supabase
-        .from("workout_templates")
-        .select(`
+  const recentSince = new Date(
+    Date.now() - recentTrainingWindowMs,
+  ).toISOString();
+  const [
+    { data, error },
+    { data: activeData, error: activeError },
+    { data: historyData, error: historyError },
+  ] = await Promise.all([
+    supabase
+      .from("workout_templates")
+      .select(
+        `
           id,
           name,
           workout_template_exercises (
@@ -148,24 +158,28 @@ export async function getWorkoutOverview(supabase: Client) {
             exercises ( id, name, tracking_type )
           ),
           training_sessions ( ended_at )
-        `)
-        .is("archived_at", null)
-        // Only each plan's most recent completed session, not its whole history.
-        .eq("training_sessions.status", "completed")
-        .order("ended_at", { ascending: false, referencedTable: "training_sessions" })
-        .limit(1, { referencedTable: "training_sessions" })
-        .order("created_at"),
-      supabase
-        .from("training_sessions")
-        .select("id, started_at, template_name")
-        .eq("status", "active")
-        .maybeSingle(),
-      supabase
-        .from("training_sessions")
-        .select("ended_at")
-        .eq("status", "completed")
-        .gte("ended_at", recentSince),
-    ]);
+        `,
+      )
+      .is("archived_at", null)
+      // Only each plan's most recent completed session, not its whole history.
+      .eq("training_sessions.status", "completed")
+      .order("ended_at", {
+        ascending: false,
+        referencedTable: "training_sessions",
+      })
+      .limit(1, { referencedTable: "training_sessions" })
+      .order("created_at"),
+    supabase
+      .from("training_sessions")
+      .select("id, started_at, template_name")
+      .eq("status", "active")
+      .maybeSingle(),
+    supabase
+      .from("training_sessions")
+      .select("ended_at")
+      .eq("status", "completed")
+      .gte("ended_at", recentSince),
+  ]);
 
   if (error || activeError || historyError) {
     throw new Error("Workouts could not be loaded.");
@@ -228,7 +242,8 @@ export async function getWorkoutTemplate(
 ): Promise<WorkoutTemplateDraft | null> {
   const { data, error } = await supabase
     .from("workout_templates")
-    .select(`
+    .select(
+      `
       id,
       name,
       workout_template_exercises (
@@ -239,7 +254,8 @@ export async function getWorkoutTemplate(
         target_sets,
         exercises ( id, name, owner_user_id, tracking_type )
       )
-    `)
+    `,
+    )
     .eq("id", workoutId)
     .is("archived_at", null)
     .maybeSingle();
@@ -252,15 +268,21 @@ export async function getWorkoutTemplate(
     name: data.name,
     exercises: [...data.workout_template_exercises]
       .sort((left, right) => left.position - right.position)
-      .flatMap((item) => item.exercises ? [{
-        defaultRestSeconds: item.default_rest_seconds ?? 120,
-        id: item.exercises.id,
-        isCustom: item.exercises.owner_user_id !== null,
-        name: item.exercises.name,
-        targetRepMax: item.target_rep_max ?? 12,
-        targetRepMin: item.target_rep_min ?? 8,
-        targetSets: item.target_sets,
-        trackingType: item.exercises.tracking_type,
-      }] : []),
+      .flatMap((item) =>
+        item.exercises
+          ? [
+              {
+                defaultRestSeconds: item.default_rest_seconds ?? 120,
+                id: item.exercises.id,
+                isCustom: item.exercises.owner_user_id !== null,
+                name: item.exercises.name,
+                targetRepMax: item.target_rep_max ?? 12,
+                targetRepMin: item.target_rep_min ?? 8,
+                targetSets: item.target_sets,
+                trackingType: item.exercises.tracking_type,
+              },
+            ]
+          : [],
+      ),
   };
 }

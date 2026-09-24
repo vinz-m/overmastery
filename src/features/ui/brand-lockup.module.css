@@ -1,4 +1,21 @@
-.lockup { display: inline-flex; gap: 10px; align-items: center; font-size: 19px; font-weight: 600; letter-spacing: -.7px; }
-.mark { width: 48px; height: 20px; flex: none; }
-.o { color: var(--brand-o); fill: var(--brand-o); }
-.m { color: var(--brand-m); fill: var(--brand-m); }
+.lockup {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+}
+.mark {
+  width: 48px;
+  height: 20px;
+  flex: none;
+}
+.o {
+  color: var(--brand-o);
+  fill: var(--brand-o);
+}
+.m {
+  color: var(--brand-m);
+  fill: var(--brand-m);
+}

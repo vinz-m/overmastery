@@ -29,96 +29,145 @@ export function ProgressHome({
 
   return (
     <main className={styles.tabContent}>
-        <section className={styles.lead}>
-          <p>Progress</p>
-          <h1>Progress</h1>
-          <span>Review recent sessions and see how each exercise is changing.</span>
+      <section className={styles.lead}>
+        <p>Progress</p>
+        <h1>Progress</h1>
+        <span>
+          Review recent sessions and see how each exercise is changing.
+        </span>
+      </section>
+
+      {!hasSeenGuidance(guidance, "progress.overview.v1") && (
+        <ContextualTip
+          body="Open a finished session for its results, or choose an exercise to follow its performance over time."
+          guidanceKey="progress.overview.v1"
+          title="See what changed"
+        />
+      )}
+
+      {sessions.length === 0 ? (
+        <section className={styles.emptyState}>
+          <span>No completed sessions yet</span>
+          <h2>Finish your first session to start your story.</h2>
+          <Link href="/workouts" transitionTypes={navTab}>
+            Choose a workout{" "}
+            <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+          </Link>
         </section>
-
-        {!hasSeenGuidance(guidance, "progress.overview.v1") && (
-          <ContextualTip
-            body="Open a finished session for its results, or choose an exercise to follow its performance over time."
-            guidanceKey="progress.overview.v1"
-            title="See what changed"
-          />
-        )}
-
-        {sessions.length === 0 ? (
-          <section className={styles.emptyState}>
-            <span>No completed sessions yet</span>
-            <h2>Finish your first session to start your story.</h2>
-            <Link href="/workouts" transitionTypes={navTab}>Choose a workout <ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></Link>
+      ) : (
+        <>
+          <section className={styles.snapshot}>
+            <div>
+              <span>Recent record</span>
+              <strong>{sessions.length}</strong>
+              <small>{sessions.length === 1 ? "session" : "sessions"}</small>
+            </div>
+            <div>
+              <span>Working sets</span>
+              <strong>{totalSets}</strong>
+              <small>completed</small>
+            </div>
+            <div>
+              <span>Last trained</span>
+              <strong>{formatSessionDate(latest.endedAt)}</strong>
+              <small>{latest.templateName}</small>
+            </div>
           </section>
-        ) : (
-          <>
-            <section className={styles.snapshot}>
-              <div>
-                <span>Recent record</span>
-                <strong>{sessions.length}</strong>
-                <small>{sessions.length === 1 ? "session" : "sessions"}</small>
-              </div>
-              <div>
-                <span>Working sets</span>
-                <strong>{totalSets}</strong>
-                <small>completed</small>
-              </div>
-              <div>
-                <span>Last trained</span>
-                <strong>{formatSessionDate(latest.endedAt)}</strong>
-                <small>{latest.templateName}</small>
-              </div>
-            </section>
 
-            <section className={styles.section}>
-              <header>
-                <div><span>Recent</span><h2>Sessions</h2></div>
-                <small>{sessions.length} recent</small>
-              </header>
-              <div className={styles.sessionList}>
-                {sessions.slice(0, 12).map((session) => (
-                  <Link href={`/progress/sessions/${session.id}`} key={session.id} transitionTypes={navForward}>
-                    <time dateTime={session.endedAt}>
-                      <b>{new Date(session.endedAt).getDate()}</b>
-                      <small>{new Intl.DateTimeFormat("en", { month: "short" }).format(new Date(session.endedAt))}</small>
-                    </time>
-                    <div>
-                      <strong>{session.templateName}</strong>
-                      <small>{session.completedSets} sets · {session.exercises.filter((exercise) => exercise.completedSets > 0).length} exercises</small>
-                    </div>
-                    <span className={styles.sessionAction}>
-                      <span>{session.improvedExercises > 0
+          <section className={styles.section}>
+            <header>
+              <div>
+                <span>Recent</span>
+                <h2>Sessions</h2>
+              </div>
+              <small>{sessions.length} recent</small>
+            </header>
+            <div className={styles.sessionList}>
+              {sessions.slice(0, 12).map((session) => (
+                <Link
+                  href={`/progress/sessions/${session.id}`}
+                  key={session.id}
+                  transitionTypes={navForward}
+                >
+                  <time dateTime={session.endedAt}>
+                    <b>{new Date(session.endedAt).getDate()}</b>
+                    <small>
+                      {new Intl.DateTimeFormat("en", { month: "short" }).format(
+                        new Date(session.endedAt),
+                      )}
+                    </small>
+                  </time>
+                  <div>
+                    <strong>{session.templateName}</strong>
+                    <small>
+                      {session.completedSets} sets ·{" "}
+                      {
+                        session.exercises.filter(
+                          (exercise) => exercise.completedSets > 0,
+                        ).length
+                      }{" "}
+                      exercises
+                    </small>
+                  </div>
+                  <span className={styles.sessionAction}>
+                    <span>
+                      {session.improvedExercises > 0
                         ? `${session.improvedExercises} improved`
-                        : "View"}</span>
-                      <ArrowRightIcon aria-hidden="true" size={16} weight="bold" />
+                        : "View"}
+                    </span>
+                    <ArrowRightIcon
+                      aria-hidden="true"
+                      size={16}
+                      weight="bold"
+                    />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <header>
+              <div>
+                <span>By exercise</span>
+                <h2>Exercise history</h2>
+              </div>
+              <small>{exercises.length} recorded</small>
+            </header>
+            <div className={styles.exerciseList}>
+              {exercises.map((exercise) => {
+                const latestExposure = exercise.exposures[0];
+                return (
+                  <Link
+                    href={`/progress/exercises/${exercise.exerciseId}`}
+                    key={exercise.exerciseId}
+                    transitionTypes={navForward}
+                  >
+                    <div>
+                      <strong>{exercise.name}</strong>
+                      <small>
+                        {formatSessionDate(latestExposure.endedAt)} ·{" "}
+                        {exercise.exposures.length}{" "}
+                        {exercise.exposures.length === 1
+                          ? "exposure"
+                          : "exposures"}
+                      </small>
+                    </div>
+                    <span>
+                      {formatPerformance(
+                        exercise.trackingType,
+                        latestExposure.loadKg,
+                        latestExposure.reps,
+                        latestExposure.unit ?? unitSystem,
+                      )}
                     </span>
                   </Link>
-                ))}
-              </div>
-            </section>
-
-            <section className={styles.section}>
-              <header>
-                <div><span>By exercise</span><h2>Exercise history</h2></div>
-                <small>{exercises.length} recorded</small>
-              </header>
-              <div className={styles.exerciseList}>
-                {exercises.map((exercise) => {
-                  const latestExposure = exercise.exposures[0];
-                  return (
-                    <Link href={`/progress/exercises/${exercise.exerciseId}`} key={exercise.exerciseId} transitionTypes={navForward}>
-                      <div>
-                        <strong>{exercise.name}</strong>
-                        <small>{formatSessionDate(latestExposure.endedAt)} · {exercise.exposures.length} {exercise.exposures.length === 1 ? "exposure" : "exposures"}</small>
-                      </div>
-                      <span>{formatPerformance(exercise.trackingType, latestExposure.loadKg, latestExposure.reps, latestExposure.unit ?? unitSystem)}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          </>
-        )}
-
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
     </main>
   );
 }

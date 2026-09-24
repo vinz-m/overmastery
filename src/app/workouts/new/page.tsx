@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { PageTransition } from "@/features/navigation/page-transition";
 
 export default async function NewWorkoutPage() {
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const [user, catalog] = await Promise.all([
     requireUser(),
     getExerciseCatalog(supabase, userId),
@@ -13,10 +16,7 @@ export default async function NewWorkoutPage() {
 
   return (
     <PageTransition>
-      <CreateWorkoutBuilder
-        catalog={catalog}
-        initialGuidance={user.guidance}
-      />
+      <CreateWorkoutBuilder catalog={catalog} initialGuidance={user.guidance} />
     </PageTransition>
   );
 }

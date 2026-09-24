@@ -15,13 +15,25 @@ export default async function HistoricalSessionPage({
   const { sessionId } = await params;
   if (!uuidPattern.test(sessionId)) notFound();
 
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const userPromise = requireUser();
   const [user, session] = await Promise.all([
     userPromise,
-    getHistorySession(supabase, userId, sessionId, userPromise.then((user) => user.unitSystem)),
+    getHistorySession(
+      supabase,
+      userId,
+      sessionId,
+      userPromise.then((user) => user.unitSystem),
+    ),
   ]);
   if (!session) notFound();
 
-  return <PageTransition><SessionHistoryDetail session={session} unitSystem={user.unitSystem} /></PageTransition>;
+  return (
+    <PageTransition>
+      <SessionHistoryDetail session={session} unitSystem={user.unitSystem} />
+    </PageTransition>
+  );
 }

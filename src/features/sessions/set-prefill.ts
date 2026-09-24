@@ -36,18 +36,30 @@ export function prefillForSet(
   previous: PreviousPerformance,
 ): SetPrefill {
   const lastCompleted = sets
-    .filter((item) => item.status === "completed" && item.position < set.position)
+    .filter(
+      (item) => item.status === "completed" && item.position < set.position,
+    )
     .sort((left, right) => right.position - left.position)[0];
   const previousReps =
-    previous.reps[set.position] ?? previous.reps[previous.reps.length - 1] ?? null;
+    previous.reps[set.position] ??
+    previous.reps[previous.reps.length - 1] ??
+    null;
 
   const fallback: SetPrefill = lastCompleted
-    ? { loadKg: lastCompleted.loadKg, reps: lastCompleted.reps, unit: lastCompleted.enteredUnit ?? null }
-    : { loadKg: previous.loadKg, reps: previousReps ?? set.plannedReps ?? null, unit: previous.unit ?? null };
+    ? {
+        loadKg: lastCompleted.loadKg,
+        reps: lastCompleted.reps,
+        unit: lastCompleted.enteredUnit ?? null,
+      }
+    : {
+        loadKg: previous.loadKg,
+        reps: previousReps ?? set.plannedReps ?? null,
+        unit: previous.unit ?? null,
+      };
 
   return {
     loadKg: set.loadKg ?? fallback.loadKg,
     reps: set.reps ?? fallback.reps,
-    unit: set.loadKg !== null ? set.enteredUnit ?? null : fallback.unit,
+    unit: set.loadKg !== null ? (set.enteredUnit ?? null) : fallback.unit,
   };
 }

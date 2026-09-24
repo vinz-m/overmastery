@@ -37,9 +37,7 @@ await Promise.all([
 const faviconSizes = [16, 32, 48];
 const faviconPngs = await Promise.all(
   faviconSizes.map((size) =>
-    sharp(sourceAtSize(size))
-      .png({ compressionLevel: 9 })
-      .toBuffer(),
+    sharp(sourceAtSize(size)).png({ compressionLevel: 9 }).toBuffer(),
   ),
 );
 

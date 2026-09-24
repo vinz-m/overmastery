@@ -51,7 +51,11 @@ async function trimCache(cacheName, limit) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
   // Keys come back in insertion order, so the oldest are first.
-  await Promise.all(keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)));
+  await Promise.all(
+    keys
+      .slice(0, Math.max(0, keys.length - limit))
+      .map((key) => cache.delete(key)),
+  );
 }
 
 self.addEventListener("activate", (event) => {

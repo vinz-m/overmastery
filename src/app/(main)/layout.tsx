@@ -9,7 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 
 import styles from "@/features/navigation/app-shell.module.css";
 
-export default async function MainLayout({ children }: { children: ReactNode }) {
+export default async function MainLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const user = await requireUser();
   const supabase = await createClient();
 

@@ -31,9 +31,7 @@ export type SetPlanProjection = {
 export function canAddExtraSet(
   sets: Array<Pick<SetPlanInput, "isPlanned" | "status">>,
 ) {
-  return !sets.some(
-    (set) => !set.isPlanned && set.status === "planned",
-  );
+  return !sets.some((set) => !set.isPlanned && set.status === "planned");
 }
 
 /**
@@ -49,9 +47,7 @@ export function projectSetPlan(
 ): SetPlanProjection {
   const plannedTotal = Math.max(0, targetSets);
   const plannedByPosition = new Map(
-    sets
-      .filter((set) => set.isPlanned)
-      .map((set) => [set.position, set]),
+    sets.filter((set) => set.isPlanned).map((set) => [set.position, set]),
   );
   const unusedPlanned = sets
     .filter((set) => set.isPlanned && set.position >= plannedTotal)

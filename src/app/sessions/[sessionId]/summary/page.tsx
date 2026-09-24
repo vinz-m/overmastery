@@ -10,7 +10,10 @@ export default async function SessionSummaryPage({
   params,
 }: PageProps<"/sessions/[sessionId]/summary">) {
   const { sessionId } = await params;
-  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const [user, workspace] = await Promise.all([
     requireUser(),
     getSessionWorkspace(supabase, sessionId, userId),
@@ -20,5 +23,12 @@ export default async function SessionSummaryPage({
   if (workspace.status === "active") redirect(`/sessions/${sessionId}`);
   if (workspace.status !== "completed") redirect("/");
 
-  return <PageTransition><SessionSummary session={workspace.session} unitSystem={user.unitSystem} /></PageTransition>;
+  return (
+    <PageTransition>
+      <SessionSummary
+        session={workspace.session}
+        unitSystem={user.unitSystem}
+      />
+    </PageTransition>
+  );
 }

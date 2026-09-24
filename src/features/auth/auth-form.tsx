@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useId, useRef } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 
-import {
-  signIn,
-  signUp,
-  type AuthActionState,
-} from "./actions";
+import { signIn, signUp, type AuthActionState } from "./actions";
 import styles from "./auth.module.css";
 
 const initialState: AuthActionState = {};
@@ -29,7 +25,10 @@ export function AuthForm({
 
   useEffect(() => {
     const firstInvalidField = ["displayName", "email", "password"].find(
-      (fieldName) => state.fieldErrors?.[fieldName as keyof NonNullable<AuthActionState["fieldErrors"]>],
+      (fieldName) =>
+        state.fieldErrors?.[
+          fieldName as keyof NonNullable<AuthActionState["fieldErrors"]>
+        ],
     );
 
     if (!firstInvalidField) return;
@@ -154,9 +153,10 @@ function Field({
   const inputId = useId();
   const errorId = `${inputId}-error`;
   const hintId = `${inputId}-hint`;
-  const describedBy = [hint ? hintId : undefined, error ? errorId : undefined]
-    .filter(Boolean)
-    .join(" ") || undefined;
+  const describedBy =
+    [hint ? hintId : undefined, error ? errorId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   return (
     <div className={styles.field}>

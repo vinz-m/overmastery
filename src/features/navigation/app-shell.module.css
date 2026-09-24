@@ -68,18 +68,29 @@
 }
 
 @media (min-width: 700px) {
-  .page { padding-top: 32px; }
-  .shell { min-height: calc(100dvh - 32px); }
+  .page {
+    padding-top: 32px;
+  }
+  .shell {
+    min-height: calc(100dvh - 32px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .loadingHeading,
   .loadingLine,
   .loadingPanel,
-  .loadingRow { animation: none; }
+  .loadingRow {
+    animation: none;
+  }
 }
 
 @keyframes loading-pulse {
-  0%, 100% { opacity: .52; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.52;
+  }
+  50% {
+    opacity: 1;
+  }
 }

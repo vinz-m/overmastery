@@ -34,5 +34,6 @@ export async function closeExpiredSession(
     .update({ status: "abandoned", ended_at: sessionExpiresAt(startedAt) })
     .eq("id", sessionId)
     .eq("status", "active");
-  if (error) throw new Error("Your previous session could not be closed. Try again.");
+  if (error)
+    throw new Error("Your previous session could not be closed. Try again.");
 }

@@ -13,7 +13,13 @@ import type { ActiveSession } from "./types";
 import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
 import { navBack } from "@/features/navigation/page-transition";
 
-export function SessionSummary({ session, unitSystem }: { session: ActiveSession; unitSystem: UnitSystem }) {
+export function SessionSummary({
+  session,
+  unitSystem,
+}: {
+  session: ActiveSession;
+  unitSystem: UnitSystem;
+}) {
   const results = session.exercises.map((exercise) => {
     const current = completedPerformance(exercise);
     return {
@@ -54,7 +60,8 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
           <p>{lead.label}</p>
           <h1>{lead.headline}</h1>
           <span>
-            {completedSets} completed working {completedSets === 1 ? "set" : "sets"}
+            {completedSets} completed working{" "}
+            {completedSets === 1 ? "set" : "sets"}
           </span>
         </section>
         <section className={styles.results}>
@@ -64,7 +71,12 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
                 <h2>{exercise.name}</h2>
                 <span>
                   {current
-                    ? performanceLabel(exercise.trackingType, current.loadKg, current.reps, current.unit ?? unitSystem)
+                    ? performanceLabel(
+                        exercise.trackingType,
+                        current.loadKg,
+                        current.reps,
+                        current.unit ?? unitSystem,
+                      )
                     : "Skipped"}
                 </span>
                 <small>{planOutcomeLabel(plan)}</small>

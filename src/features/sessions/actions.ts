@@ -43,7 +43,8 @@ export async function startWorkout(
 
   const { data: template, error: templateError } = await supabase
     .from("workout_templates")
-    .select(`
+    .select(
+      `
       id,
       name,
       workout_template_exercises (
@@ -60,7 +61,8 @@ export async function startWorkout(
           tracking_type
         )
       )
-    `)
+    `,
+    )
     .eq("id", workoutId)
     .is("archived_at", null)
     .single();
@@ -172,7 +174,9 @@ export async function completeSet(input: {
     !Number.isInteger(input.reps) ||
     input.reps < 0 ||
     input.reps > 1000 ||
-    (input.loadUnit !== null && input.loadUnit !== "metric" && input.loadUnit !== "imperial")
+    (input.loadUnit !== null &&
+      input.loadUnit !== "metric" &&
+      input.loadUnit !== "imperial")
   ) {
     return failure("Enter a valid set.");
   }
@@ -181,7 +185,8 @@ export async function completeSet(input: {
   const supabase = await createClient();
   const { data: set } = await supabase
     .from("exercise_sets")
-    .select(`
+    .select(
+      `
       id,
       session_exercise_id,
       session_exercises (
@@ -189,7 +194,8 @@ export async function completeSet(input: {
         training_session_id,
         training_sessions ( started_at, status )
       )
-    `)
+    `,
+    )
     .eq("id", input.setId)
     .single();
 
@@ -203,8 +209,14 @@ export async function completeSet(input: {
     return failure("This workout is no longer active.");
   }
   if (isSessionExpired(exercise.training_sessions.started_at)) {
-    await closeExpiredSession(supabase, input.sessionId, exercise.training_sessions.started_at);
-    return failure("This workout was closed automatically after 6 hours. Start a new one to keep logging.");
+    await closeExpiredSession(
+      supabase,
+      input.sessionId,
+      exercise.training_sessions.started_at,
+    );
+    return failure(
+      "This workout was closed automatically after 6 hours. Start a new one to keep logging.",
+    );
   }
 
   const trackingType = exercise.tracking_type;
@@ -223,15 +235,13 @@ export async function completeSet(input: {
   const { error } = await supabase
     .from("exercise_sets")
     .update({
-      assistance_kg:
-        trackingType === "assistance_reps" ? input.loadKg : null,
+      assistance_kg: trackingType === "assistance_reps" ? input.loadKg : null,
       completed_at: now,
       entered_unit: loadRequired ? input.loadUnit : null,
       reps: input.reps,
       status: "completed",
       weight_kg:
-        trackingType === "bodyweight_reps" ||
-        trackingType === "assistance_reps"
+        trackingType === "bodyweight_reps" || trackingType === "assistance_reps"
           ? null
           : input.loadKg,
     })
@@ -253,7 +263,9 @@ export async function reopenSet(input: {
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("exercise_sets")
-    .select("id, session_exercise_id, session_exercises ( training_session_id, training_sessions ( status ) )")
+    .select(
+      "id, session_exercise_id, session_exercises ( training_session_id, training_sessions ( status ) )",
+    )
     .eq("id", input.setId)
     .single();
   if (
@@ -288,13 +300,15 @@ export async function addExtraSet(input: {
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
-    .select(`
+    .select(
+      `
       id,
       training_session_id,
       training_sessions ( status ),
       target_sets,
       exercise_sets ( planned_reps, position, status )
-    `)
+    `,
+    )
     .eq("id", input.sessionExerciseId)
     .single();
 
@@ -344,7 +358,9 @@ export async function removeWorkingSet(input: {
   const supabase = await createClient();
   const { data: set } = await supabase
     .from("exercise_sets")
-    .select("id, planned_reps, position, status, session_exercise_id, session_exercises ( training_session_id, target_sets, training_sessions ( status ), exercise_sets ( id, status ) )")
+    .select(
+      "id, planned_reps, position, status, session_exercise_id, session_exercises ( training_session_id, target_sets, training_sessions ( status ), exercise_sets ( id, status ) )",
+    )
     .eq("id", input.setId)
     .single();
 
@@ -402,7 +418,9 @@ export async function restoreSkippedSet(input: {
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("exercise_sets")
-    .select("id, session_exercise_id, status, session_exercises ( training_session_id, training_sessions ( status ) )")
+    .select(
+      "id, session_exercise_id, status, session_exercises ( training_session_id, training_sessions ( status ) )",
+    )
     .eq("id", input.setId)
     .single();
   if (
@@ -441,12 +459,18 @@ export async function restoreMissingPlannedSet(input: {
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
-    .select("id, training_session_id, training_sessions ( status ), target_rep_max, target_sets, exercise_sets ( position )")
+    .select(
+      "id, training_session_id, training_sessions ( status ), target_rep_max, target_sets, exercise_sets ( position )",
+    )
     .eq("id", input.sessionExerciseId)
     .single();
-  const source = exercise && exercise.target_sets !== null
-    ? { target_rep_max: exercise.target_rep_max, target_sets: exercise.target_sets }
-    : null;
+  const source =
+    exercise && exercise.target_sets !== null
+      ? {
+          target_rep_max: exercise.target_rep_max,
+          target_sets: exercise.target_sets,
+        }
+      : null;
   if (
     !exercise ||
     !source ||
@@ -480,7 +504,9 @@ export async function skipExercise(input: {
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
-    .select("id, training_session_id, training_sessions ( status ), exercise_sets ( id, status )")
+    .select(
+      "id, training_session_id, training_sessions ( status ), exercise_sets ( id, status )",
+    )
     .eq("id", input.sessionExerciseId)
     .single();
 
@@ -529,7 +555,9 @@ export async function swapExercise(input: {
   const [{ data: current }, { data: replacement }] = await Promise.all([
     supabase
       .from("session_exercises")
-      .select("id, training_session_id, training_sessions ( status ), exercise_sets ( id, status )")
+      .select(
+        "id, training_session_id, training_sessions ( status ), exercise_sets ( id, status )",
+      )
       .eq("id", input.sessionExerciseId)
       .eq("training_session_id", input.sessionId)
       .single(),
@@ -580,8 +608,10 @@ export async function finishSession(
   });
 
   if (error) return failure("The workout could not be finished. Try again.");
-  if (outcome === "not_active") return failure("This workout is no longer active.");
-  if (outcome === "no_sets") return failure("Complete at least one set before finishing.");
+  if (outcome === "not_active")
+    return failure("This workout is no longer active.");
+  if (outcome === "no_sets")
+    return failure("Complete at least one set before finishing.");
 
   revalidatePath("/", "layout");
   redirect(`/sessions/${sessionId}/summary`);
@@ -602,7 +632,8 @@ export async function discardSession(
 ): Promise<DiscardSessionState> {
   void previousState;
   void formData;
-  if (!uuidPattern.test(sessionId)) return { message: "This workout is invalid." };
+  if (!uuidPattern.test(sessionId))
+    return { message: "This workout is invalid." };
 
   const userId = await requireUserId();
   const supabase = await createClient();
@@ -631,7 +662,8 @@ export async function discardSession(
         .eq("id", session.id)
         .eq("status", "active");
 
-  if (error) return { message: "The workout could not be discarded. Try again." };
+  if (error)
+    return { message: "The workout could not be discarded. Try again." };
 
   revalidatePath("/", "layout");
   redirect("/");

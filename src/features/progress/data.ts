@@ -6,11 +6,18 @@ import {
   comparePerformance,
   type PerformanceComparison,
 } from "@/features/sessions/performance";
-import type { PreviousPerformance, TrackingType } from "@/features/sessions/types";
+import type {
+  PreviousPerformance,
+  TrackingType,
+} from "@/features/sessions/types";
 import type { Database } from "@/lib/supabase/database.types";
 import type { UnitSystem } from "@/lib/units";
 
-import type { ExerciseTimeline, HistoryExercise, HistorySession } from "./types";
+import type {
+  ExerciseTimeline,
+  HistoryExercise,
+  HistorySession,
+} from "./types";
 
 type Client = SupabaseClient<Database>;
 
@@ -88,10 +95,9 @@ export async function getProgressOverview(
   const exerciseIndex = buildExerciseIndex(sessions);
 
   return {
-    exercises: [...exerciseIndex.values()]
-      .sort((left, right) =>
-        right.exposures[0].endedAt.localeCompare(left.exposures[0].endedAt),
-      ),
+    exercises: [...exerciseIndex.values()].sort((left, right) =>
+      right.exposures[0].endedAt.localeCompare(left.exposures[0].endedAt),
+    ),
     sessions,
   };
 }
@@ -149,7 +155,8 @@ export async function getExerciseTimeline(
   const [{ data, error }, units] = await Promise.all([
     supabase
       .from("session_exercises")
-      .select(`
+      .select(
+        `
         exercise_id,
         exercise_name,
         id,
@@ -167,7 +174,8 @@ export async function getExerciseTimeline(
           weight_kg
         ),
         training_sessions!inner ( ended_at, id, started_at, template_name )
-      `)
+      `,
+      )
       .eq("exercise_id", exerciseId)
       .eq("training_sessions.user_id", userId)
       .eq("training_sessions.status", "completed")
@@ -188,9 +196,11 @@ export async function getExerciseTimeline(
     }
   }
 
-  return buildExerciseIndex(buildHistory([...sessions.values()], units)).get(
-    exerciseId,
-  ) ?? null;
+  return (
+    buildExerciseIndex(buildHistory([...sessions.values()], units)).get(
+      exerciseId,
+    ) ?? null
+  );
 }
 
 function buildHistory(
@@ -225,16 +235,19 @@ function buildHistory(
           ? previousByExercise.get(exercise.exercise_id)
           : undefined;
         const comparison: PerformanceComparison = previous
-          ? comparePerformance(current, previous, exercise.tracking_type, current?.unit ?? unitSystem)
+          ? comparePerformance(
+              current,
+              previous,
+              exercise.tracking_type,
+              current?.unit ?? unitSystem,
+            )
           : current
             ? { label: "Baseline recorded", state: "new" }
             : { label: "No completed sets", state: "new" };
         const storedPlannedSets = exercise.exercise_sets.filter(
           (set) => set.planned_reps !== null,
         ).length;
-        const plannedSets =
-          exercise.target_sets ??
-          storedPlannedSets;
+        const plannedSets = exercise.target_sets ?? storedPlannedSets;
         const plannedCompletedSets = completed.filter((set) =>
           exercise.target_sets !== null
             ? set.position < plannedSets

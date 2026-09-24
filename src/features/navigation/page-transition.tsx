@@ -20,10 +20,18 @@ const enterByType = { ...exitByType, default: "page-reveal" };
 
 /** Wrap each page's content (not the layout: layouts persist, so they never enter or exit). */
 export function PageTransition({ children }: { children: ReactNode }) {
-  return <ViewTransition default="none" enter={enterByType} exit={exitByType}>{children}</ViewTransition>;
+  return (
+    <ViewTransition default="none" enter={enterByType} exit={exitByType}>
+      {children}
+    </ViewTransition>
+  );
 }
 
 /** Wrap a route's loading skeleton so it fades out as the real page arrives. */
 export function LoadingTransition({ children }: { children: ReactNode }) {
-  return <ViewTransition default="none" exit="page-reveal-out">{children}</ViewTransition>;
+  return (
+    <ViewTransition default="none" exit="page-reveal-out">
+      {children}
+    </ViewTransition>
+  );
 }

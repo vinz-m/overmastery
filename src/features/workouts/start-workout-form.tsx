@@ -35,7 +35,9 @@ export function StartWorkoutForm({
         type="submit"
       >
         <span>{pending ? "Starting…" : label}</span>
-        {showArrow && <CaretRightIcon aria-hidden="true" size={18} weight="bold" />}
+        {showArrow && (
+          <CaretRightIcon aria-hidden="true" size={18} weight="bold" />
+        )}
       </button>
       <span aria-live="polite" className={styles.status}>
         {pending ? "Starting workout…" : ""}

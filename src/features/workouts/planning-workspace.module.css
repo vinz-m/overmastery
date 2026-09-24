@@ -11,7 +11,9 @@
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
-.tabContent { min-width: 0; }
+.tabContent {
+  min-width: 0;
+}
 
 .tabs {
   display: grid;

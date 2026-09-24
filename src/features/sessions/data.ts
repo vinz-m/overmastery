@@ -23,7 +23,8 @@ export async function getSessionWorkspace(
   const catalogPromise = getExerciseCatalog(supabase, userId);
   const { data, error } = await supabase
     .from("training_sessions")
-    .select(`
+    .select(
+      `
       id,
       source_workout_template_id,
       started_at,
@@ -51,7 +52,8 @@ export async function getSessionWorkspace(
           weight_kg
         )
       )
-    `)
+    `,
+    )
     .eq("id", sessionId)
     .eq("user_id", userId)
     .single();
@@ -138,7 +140,10 @@ export async function getSessionWorkspace(
 export async function getLatestPerformances(
   supabase: Client,
   exerciseIds: string[],
-  { excludeSessionId, workoutTemplateId }: { excludeSessionId?: string; workoutTemplateId: string | null },
+  {
+    excludeSessionId,
+    workoutTemplateId,
+  }: { excludeSessionId?: string; workoutTemplateId: string | null },
 ) {
   const performances = new Map<string, PreviousPerformance>();
   if (exerciseIds.length === 0) return performances;
@@ -158,7 +163,11 @@ export async function getLatestPerformances(
   ]);
 
   for (const row of [...(anyWorkout ?? []), ...(sameWorkout ?? [])]) {
-    performances.set(row.exercise_id, { loadKg: row.load_kg, reps: row.reps, unit: row.load_unit });
+    performances.set(row.exercise_id, {
+      loadKg: row.load_kg,
+      reps: row.reps,
+      unit: row.load_unit,
+    });
   }
 
   return performances;

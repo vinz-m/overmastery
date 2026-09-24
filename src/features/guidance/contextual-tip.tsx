@@ -49,7 +49,11 @@ export function ContextualTip({
           <button disabled={pending} onClick={dismiss} type="button">
             {pending ? "Hiding…" : "Hide tip"}
           </button>
-          {saveFailed && <p className={styles.error} role="alert">Unable to hide this tip. Try again.</p>}
+          {saveFailed && (
+            <p className={styles.error} role="alert">
+              Unable to hide this tip. Try again.
+            </p>
+          )}
         </motion.aside>
       )}
     </AnimatePresence>

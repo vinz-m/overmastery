@@ -43,7 +43,7 @@
   font-family: var(--font-display);
   font-size: clamp(30px, 8vw, 38px);
   font-weight: 600;
-  letter-spacing: -.04em;
+  letter-spacing: -0.04em;
   line-height: 1.08;
   text-wrap: balance;
 }
@@ -105,12 +105,24 @@
 }
 
 @media (hover: hover) {
-  .actions button:hover { background: var(--accent-hover); }
-  .actions a:hover { background: var(--surface-soft); }
+  .actions button:hover {
+    background: var(--accent-hover);
+  }
+  .actions a:hover {
+    background: var(--surface-soft);
+  }
 }
 
 @media (max-width: 420px) {
-  .page { align-items: start; padding-top: 22px; }
-  .content { margin-top: 34px; padding: 22px 20px; }
-  .actions { grid-template-columns: 1fr; }
+  .page {
+    align-items: start;
+    padding-top: 22px;
+  }
+  .content {
+    margin-top: 34px;
+    padding: 22px 20px;
+  }
+  .actions {
+    grid-template-columns: 1fr;
+  }
 }

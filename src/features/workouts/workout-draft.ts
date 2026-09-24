@@ -12,7 +12,8 @@ export function readWorkoutDraft(value: FormDataEntryValue | null) {
 
   try {
     const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 30) return null;
+    if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 30)
+      return null;
 
     const rows: WorkoutExerciseDraft[] = [];
     const exerciseIds = new Set<string>();
@@ -25,12 +26,22 @@ export function readWorkoutDraft(value: FormDataEntryValue | null) {
       const targetRepMax = Number(row.targetRepMax);
       const defaultRestSeconds = Number(row.defaultRestSeconds);
       if (
-        !isWorkoutId(id) || exerciseIds.has(id) ||
-        !Number.isInteger(targetSets) || targetSets < 1 || targetSets > 20 ||
-        !Number.isInteger(targetRepMin) || targetRepMin < 1 || targetRepMin > 100 ||
-        !Number.isInteger(targetRepMax) || targetRepMax < targetRepMin || targetRepMax > 100 ||
-        !Number.isInteger(defaultRestSeconds) || defaultRestSeconds < 0 || defaultRestSeconds > 3600
-      ) return null;
+        !isWorkoutId(id) ||
+        exerciseIds.has(id) ||
+        !Number.isInteger(targetSets) ||
+        targetSets < 1 ||
+        targetSets > 20 ||
+        !Number.isInteger(targetRepMin) ||
+        targetRepMin < 1 ||
+        targetRepMin > 100 ||
+        !Number.isInteger(targetRepMax) ||
+        targetRepMax < targetRepMin ||
+        targetRepMax > 100 ||
+        !Number.isInteger(defaultRestSeconds) ||
+        defaultRestSeconds < 0 ||
+        defaultRestSeconds > 3600
+      )
+        return null;
 
       exerciseIds.add(id);
       rows.push({
@@ -41,7 +52,9 @@ export function readWorkoutDraft(value: FormDataEntryValue | null) {
         targetRepMax,
         targetRepMin,
         targetSets,
-        trackingType: (typeof row.trackingType === "string" ? row.trackingType : "weight_reps") as ExerciseTrackingType,
+        trackingType: (typeof row.trackingType === "string"
+          ? row.trackingType
+          : "weight_reps") as ExerciseTrackingType,
       });
     }
     return rows;

@@ -334,17 +334,17 @@ weight × reps
 
 Exercises should support appropriate measurement models.
 
-| Exercise | Tracking |
-|---|---|
-| Bench Press | Weight × Reps |
-| Dumbbell Curl | Weight × Reps |
-| Pull-up | Reps + Optional Added Weight |
-| Assisted Pull-up | Assistance + Reps |
-| Plank | Duration |
-| Farmer's Carry | Weight + Distance / Duration |
-| Sled Push | Weight + Distance |
-| Bodyweight Exercise | Reps |
-| Machine Exercise | Weight × Reps |
+| Exercise            | Tracking                     |
+| ------------------- | ---------------------------- |
+| Bench Press         | Weight × Reps                |
+| Dumbbell Curl       | Weight × Reps                |
+| Pull-up             | Reps + Optional Added Weight |
+| Assisted Pull-up    | Assistance + Reps            |
+| Plank               | Duration                     |
+| Farmer's Carry      | Weight + Distance / Duration |
+| Sled Push           | Weight + Distance            |
+| Bodyweight Exercise | Reps                         |
+| Machine Exercise    | Weight × Reps                |
 
 The initial MVP can support a smaller subset, but the underlying model should avoid assuming every exercise is identical.
 

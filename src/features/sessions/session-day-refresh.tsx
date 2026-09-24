@@ -15,7 +15,10 @@ export function SessionDayRefresh({ dayEndsAt }: { dayEndsAt: string }) {
         router.refresh();
       }
     };
-    const timer = window.setTimeout(refreshIfNeeded, Math.max(0, deadline - Date.now()) + 50);
+    const timer = window.setTimeout(
+      refreshIfNeeded,
+      Math.max(0, deadline - Date.now()) + 50,
+    );
     document.addEventListener("visibilitychange", refreshIfNeeded);
     window.addEventListener("focus", refreshIfNeeded);
     return () => {

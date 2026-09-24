@@ -47,7 +47,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
+        />
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>

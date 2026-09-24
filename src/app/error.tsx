@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
-import {
-  RouteState,
-  routeStateStyles,
-} from "@/features/ui/route-state";
+import { RouteState, routeStateStyles } from "@/features/ui/route-state";
 
 export default function Error({
   error,
@@ -26,7 +23,9 @@ export default function Error({
       description="Something went wrong while loading your training data. Try again, or return to Today."
       actions={
         <>
-          <button type="button" onClick={retry}>Try again</button>
+          <button type="button" onClick={retry}>
+            Try again
+          </button>
           <Link href="/">Return to Today</Link>
         </>
       }
