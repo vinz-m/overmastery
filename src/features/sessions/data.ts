@@ -3,40 +3,29 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
+import { getExerciseCatalog } from "@/features/workouts/data";
 
 import type {
   ActiveExercise,
   ActiveSession,
   PreviousPerformance,
   SwapExerciseOption,
-  TrackingType,
 } from "./types";
 
 type Client = SupabaseClient<Database>;
-
-type PreviousSessionRow = {
-  session_exercises: Array<{
-    exercise_id: string | null;
-    exercise_sets: Array<{
-      assistance_kg: number | null;
-      position: number;
-      reps: number | null;
-      status: Database["public"]["Enums"]["set_status"];
-      weight_kg: number | null;
-    }>;
-    tracking_type: TrackingType;
-  }>;
-};
 
 export async function getSessionWorkspace(
   supabase: Client,
   sessionId: string,
   userId: string,
 ) {
+  // The swap catalog doesn't depend on the session, so load it alongside.
+  const catalogPromise = getExerciseCatalog(supabase, userId);
   const { data, error } = await supabase
     .from("training_sessions")
     .select(`
       id,
+      source_workout_template_id,
       started_at,
       template_name,
       status,
@@ -75,8 +64,8 @@ export async function getSessionWorkspace(
     .filter((id): id is string => Boolean(id));
   const previous = await getPreviousPerformances(
     supabase,
-    userId,
     data.id,
+    data.source_workout_template_id,
     exerciseIds,
   );
 
@@ -137,77 +126,43 @@ export async function getSessionWorkspace(
     templateName: data.template_name ?? "Workout",
   };
 
-  const { data: catalogData } = await supabase
-    .from("exercises")
-    .select("id, name, tracking_type")
-    .is("archived_at", null)
-    .in("tracking_type", [
-      "weight_reps",
-      "bodyweight_reps",
-      "added_weight_reps",
-      "assistance_reps",
-    ])
-    .order("name");
-
-  const catalog: SwapExerciseOption[] = (catalogData ?? []).map((exercise) => ({
+  const catalog: SwapExerciseOption[] = (await catalogPromise).map((exercise) => ({
     id: exercise.id,
     name: exercise.name,
-    trackingType: exercise.tracking_type,
+    trackingType: exercise.trackingType,
   }));
 
   return { catalog, session, status: data.status };
 }
 
+// Prefers the last time this exercise was done in the same workout, since the
+// same exercise is often trained differently across workouts. Falls back to
+// the latest session of that exercise from any workout.
 async function getPreviousPerformances(
   supabase: Client,
-  userId: string,
   currentSessionId: string,
+  workoutTemplateId: string | null,
   exerciseIds: string[],
 ) {
   const performances = new Map<string, PreviousPerformance>();
   if (exerciseIds.length === 0) return performances;
 
-  const { data } = await supabase
-    .from("training_sessions")
-    .select(`
-      session_exercises (
-        exercise_id,
-        tracking_type,
-        exercise_sets (
-          assistance_kg,
-          position,
-          reps,
-          status,
-          weight_kg
-        )
-      )
-    `)
-    .eq("user_id", userId)
-    .eq("status", "completed")
-    .neq("id", currentSessionId)
-    .order("ended_at", { ascending: false })
-    .limit(30);
+  const [{ data: anyWorkout }, { data: sameWorkout }] = await Promise.all([
+    supabase.rpc("latest_exercise_performances", {
+      p_exclude_session_id: currentSessionId,
+      p_exercise_ids: exerciseIds,
+    }),
+    workoutTemplateId
+      ? supabase.rpc("latest_exercise_performances", {
+          p_exclude_session_id: currentSessionId,
+          p_exercise_ids: exerciseIds,
+          p_workout_template_id: workoutTemplateId,
+        })
+      : { data: [] },
+  ]);
 
-  for (const session of (data ?? []) as PreviousSessionRow[]) {
-    for (const exercise of session.session_exercises) {
-      const exerciseId = exercise.exercise_id;
-      if (!exerciseId || performances.has(exerciseId)) continue;
-
-      const sets = exercise.exercise_sets
-        .filter(
-          (set) => set.status === "completed" && set.reps !== null,
-        )
-        .sort((left, right) => left.position - right.position);
-      if (sets.length === 0) continue;
-
-      performances.set(exerciseId, {
-        loadKg:
-          exercise.tracking_type === "assistance_reps"
-            ? sets[0].assistance_kg
-            : sets[0].weight_kg,
-        reps: sets.map((set) => set.reps!),
-      });
-    }
+  for (const row of [...(anyWorkout ?? []), ...(sameWorkout ?? [])]) {
+    performances.set(row.exercise_id, { loadKg: row.load_kg, reps: row.reps });
   }
 
   return performances;

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getHistorySession } from "@/features/progress/data";
 import { SessionHistoryDetail } from "@/features/progress/history-detail";
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 const uuidPattern =
@@ -14,9 +14,12 @@ export default async function HistoricalSessionPage({
   const { sessionId } = await params;
   if (!uuidPattern.test(sessionId)) notFound();
 
-  const user = await requireUser();
-  const supabase = await createClient();
-  const session = await getHistorySession(supabase, user.id, sessionId, user.unitSystem);
+  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const userPromise = requireUser();
+  const [user, session] = await Promise.all([
+    userPromise,
+    getHistorySession(supabase, userId, sessionId, userPromise.then((user) => user.unitSystem)),
+  ]);
   if (!session) notFound();
 
   return <SessionHistoryDetail session={session} unitSystem={user.unitSystem} />;

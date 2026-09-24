@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { updateGuidanceMetadata } from "@/features/guidance/server";
-import { requireUser } from "@/lib/auth/session";
+import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import type {
@@ -47,7 +47,7 @@ export async function createWorkout(
   _previousState: CreateWorkoutState,
   formData: FormData,
 ): Promise<CreateWorkoutState> {
-  const user = await requireUser();
+  const userId = await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   const exercises = readWorkoutDraft(formData.get("exercises"));
   const fieldErrors: CreateWorkoutState["fieldErrors"] = {};
@@ -67,7 +67,7 @@ export async function createWorkout(
   const supabase = await createClient();
   const { data: workout, error: workoutError } = await supabase
     .from("workout_templates")
-    .insert({ name, user_id: user.id })
+    .insert({ name, user_id: userId })
     .select("id")
     .single();
 
@@ -122,7 +122,7 @@ export async function updateWorkout(
 ): Promise<CreateWorkoutState> {
   if (!isWorkoutId(workoutId)) return { message: "This workout could not be saved." };
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   const exercises = readWorkoutDraft(formData.get("exercises"));
   const fieldErrors: CreateWorkoutState["fieldErrors"] = {};
@@ -146,7 +146,7 @@ export async function updateWorkout(
       )
     `)
     .eq("id", workoutId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("archived_at", null)
     .maybeSingle();
   if (lookupError || !workout) return { message: "This workout is no longer available." };
@@ -201,13 +201,13 @@ export async function updateWorkout(
 export async function archiveWorkout(workoutId: string, formData: FormData) {
   void formData;
   if (!isWorkoutId(workoutId)) redirect("/workouts");
-  const user = await requireUser();
+  const userId = await requireUserId();
   const supabase = await createClient();
   await supabase
     .from("workout_templates")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", workoutId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("archived_at", null);
   revalidatePath("/");
   revalidatePath("/workouts");
@@ -218,7 +218,7 @@ export async function createCustomExercise(
   _previousState: CreateExerciseState,
   formData: FormData,
 ): Promise<CreateExerciseState> {
-  const user = await requireUser();
+  const userId = await requireUserId();
   const name = String(formData.get("customExerciseName") ?? "").trim();
   const trackingType = String(
     formData.get("trackingType") ?? "weight_reps",
@@ -235,7 +235,7 @@ export async function createCustomExercise(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("exercises")
-    .insert({ name, owner_user_id: user.id, tracking_type: trackingType })
+    .insert({ name, owner_user_id: userId, tracking_type: trackingType })
     .select("id, name, tracking_type")
     .single();
 
@@ -269,7 +269,7 @@ export async function updateCustomExercise(
     return { message: "This custom exercise could not be updated." };
   }
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   const trackingType = String(
     formData.get("trackingType") ?? "weight_reps",
@@ -289,7 +289,7 @@ export async function updateCustomExercise(
     .from("exercises")
     .update({ name, tracking_type: trackingType })
     .eq("id", exerciseId)
-    .eq("owner_user_id", user.id)
+    .eq("owner_user_id", userId)
     .is("archived_at", null)
     .select("id, name, tracking_type")
     .maybeSingle();
@@ -325,13 +325,13 @@ export async function archiveCustomExercise(
     return { message: "This custom exercise could not be archived." };
   }
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const supabase = await createClient();
   const { data: exercise, error: exerciseError } = await supabase
     .from("exercises")
     .select("id, name")
     .eq("id", exerciseId)
-    .eq("owner_user_id", user.id)
+    .eq("owner_user_id", userId)
     .is("archived_at", null)
     .maybeSingle();
 
@@ -343,7 +343,7 @@ export async function archiveCustomExercise(
     .from("workout_template_exercises")
     .select("workout_templates!inner(name, user_id, archived_at)")
     .eq("exercise_id", exerciseId)
-    .eq("workout_templates.user_id", user.id)
+    .eq("workout_templates.user_id", userId)
     .is("workout_templates.archived_at", null);
 
   if (linksError) {
@@ -365,7 +365,7 @@ export async function archiveCustomExercise(
     .from("exercises")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", exercise.id)
-    .eq("owner_user_id", user.id)
+    .eq("owner_user_id", userId)
     .is("archived_at", null);
 
   if (error) {
@@ -387,13 +387,13 @@ export async function restoreCustomExercise(
     return { message: "This custom exercise could not be restored." };
   }
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("exercises")
     .update({ archived_at: null })
     .eq("id", exerciseId)
-    .eq("owner_user_id", user.id)
+    .eq("owner_user_id", userId)
     .not("archived_at", "is", null)
     .select("id, name, tracking_type")
     .maybeSingle();

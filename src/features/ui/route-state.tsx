@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { BrandLockup } from "./brand-lockup";
 import styles from "./route-state.module.css";
 
 type RouteStateProps = {
@@ -21,17 +22,7 @@ export function RouteState({
     <main className={styles.page}>
       <section className={styles.shell} aria-labelledby="route-state-title">
         <header className={styles.header}>
-          <span className={styles.mark} aria-hidden="true">
-            <svg viewBox="0 0 28 28" fill="none">
-              <path
-                d="M5 20V12a9 9 0 0 1 18 0v8M10 20v-8a4 4 0 0 1 8 0v8"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <span className={styles.brand}>overmastery<span>.</span></span>
+          <BrandLockup />
         </header>
 
         <div className={styles.content}>

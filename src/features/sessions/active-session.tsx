@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
   ArrowLeftIcon,
@@ -28,13 +27,13 @@ import { formatDisplayLoad, loadUnit, toDisplayLoad, toKilograms, type UnitSyste
 import { scrollToPageTop } from "@/lib/motion";
 import { SelectField } from "@/features/ui/select-field";
 import { canAddExtraSet, planOutcomeLabel, projectSetPlan, removalActionLabel } from "./set-policy";
+import { prefillForSet } from "./set-prefill";
 import styles from "./active-session.module.css";
 import type { ActiveExercise, ActiveSession, SessionMutationResult, SwapExerciseOption } from "./types";
 
 type Mutate = (action: () => Promise<SessionMutationResult>, afterSuccess?: () => void) => void;
 
 export function ActiveSessionScreen({ catalog, session, unitSystem }: { dayEndsAt: string; catalog: SwapExerciseOption[]; session: ActiveSession; unitSystem: UnitSystem }) {
-  const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [currentExerciseId, setCurrentExerciseId] = useState(session.exercises.find((exercise) => exercise.status !== "skipped")?.id ?? session.exercises[0]?.id);
@@ -68,8 +67,8 @@ export function ActiveSessionScreen({ catalog, session, unitSystem }: { dayEndsA
       setMessage(null);
       const result = await action();
       if (!result.ok) { setMessage(result.message ?? "That change could not be saved. Try again."); return; }
+      // The action re-renders this route in its own response; no refresh needed.
       afterSuccess?.();
-      router.refresh();
     });
   };
 
@@ -128,9 +127,9 @@ function FocusedSet({ exercise, mutate, pending, sessionId, unitSystem }: { exer
 }
 
 function ActiveSetEditor({ completedCount, exercise, mutate, pending, sessionId, set, unitSystem }: { completedCount: number; exercise: ActiveExercise; mutate: Mutate; pending: boolean; sessionId: string; set: ActiveExercise["sets"][number]; unitSystem: UnitSystem }) {
-  const previousLoad = exercise.previous.loadKg;
-  const [load, setLoad] = useState(set.loadKg === null ? previousLoad === null ? "" : String(toDisplayLoad(previousLoad, unitSystem)) : String(toDisplayLoad(set.loadKg, unitSystem)));
-  const [reps, setReps] = useState(set.reps === null ? "" : String(set.reps));
+  const prefill = prefillForSet(set, exercise.sets, exercise.previous);
+  const [load, setLoad] = useState(prefill.loadKg === null ? "" : String(toDisplayLoad(prefill.loadKg, unitSystem)));
+  const [reps, setReps] = useState(prefill.reps === null ? "" : String(prefill.reps));
   const loadRequired = exercise.trackingType !== "bodyweight_reps";
   const canComplete = reps !== "" && (!loadRequired || (load !== "" && Number(load) >= 0));
   return <section className={styles.activeSet}>

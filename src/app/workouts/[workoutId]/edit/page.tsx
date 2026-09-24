@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { CreateWorkoutBuilder } from "@/features/workouts/create-workout-builder";
 import { getExerciseCatalog, getWorkoutTemplate } from "@/features/workouts/data";
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 const uuidPattern =
@@ -14,11 +14,11 @@ export default async function EditWorkoutPage({
   const { workoutId } = await params;
   if (!uuidPattern.test(workoutId)) notFound();
 
-  const user = await requireUser();
-  const supabase = await createClient();
-  const [workout, catalog] = await Promise.all([
+  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [user, workout, catalog] = await Promise.all([
+    requireUser(),
     getWorkoutTemplate(supabase, workoutId),
-    getExerciseCatalog(supabase, user.id),
+    getExerciseCatalog(supabase, userId),
   ]);
 
   if (!workout) notFound();

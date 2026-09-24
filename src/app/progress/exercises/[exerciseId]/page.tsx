@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getExerciseTimeline } from "@/features/progress/data";
 import { ExerciseHistoryDetail } from "@/features/progress/history-detail";
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 const uuidPattern =
@@ -14,9 +14,12 @@ export default async function ExerciseHistoryPage({
   const { exerciseId } = await params;
   if (!uuidPattern.test(exerciseId)) notFound();
 
-  const user = await requireUser();
-  const supabase = await createClient();
-  const timeline = await getExerciseTimeline(supabase, user.id, exerciseId, user.unitSystem);
+  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const userPromise = requireUser();
+  const [user, timeline] = await Promise.all([
+    userPromise,
+    getExerciseTimeline(supabase, userId, exerciseId, userPromise.then((user) => user.unitSystem)),
+  ]);
   if (!timeline) notFound();
 
   return <ExerciseHistoryDetail timeline={timeline} unitSystem={user.unitSystem} />;

@@ -8,7 +8,7 @@ import { hasVerifiedClaims } from "@/lib/auth/session-state";
 import { createClient } from "@/lib/supabase/server";
 import { nextSessionDay } from "@/features/sessions/session-day";
 
-const loadRequiredUser = async () => {
+const loadVerifiedClaims = async () => {
   const supabase = await createClient();
   const result = await supabase.auth.getClaims();
 
@@ -16,8 +16,22 @@ const loadRequiredUser = async () => {
     redirect("/login");
   }
 
-  const claims = result.data.claims;
+  return result.data.claims;
+};
+
+// Verifies the JWT locally against the cached signing keys, so callers that
+// only need the user id can start their queries without waiting on a profile read.
+const requireVerifiedClaims = cache(loadVerifiedClaims);
+
+export async function requireUserId() {
+  const claims = await requireVerifiedClaims();
+  return claims.sub;
+}
+
+const loadRequiredUser = async () => {
+  const claims = await requireVerifiedClaims();
   const subject = claims.sub;
+  const supabase = await createClient();
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")

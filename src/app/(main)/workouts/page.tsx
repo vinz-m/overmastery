@@ -4,7 +4,7 @@ import {
   getWorkoutOverview,
 } from "@/features/workouts/data";
 import { WorkoutHome } from "@/features/workouts/home";
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function WorkoutsPage({
@@ -12,13 +12,13 @@ export default async function WorkoutsPage({
 }: {
   searchParams: Promise<{ view?: string | string[] }>;
 }) {
-  const supabase = await createClient();
-  const overviewPromise = getWorkoutOverview(supabase);
-  const [user, params] = await Promise.all([requireUser(), searchParams]);
-  const [overview, catalog, archivedCatalog] = await Promise.all([
-    overviewPromise,
-    getExerciseCatalog(supabase, user.id),
-    getArchivedCustomExercises(supabase, user.id),
+  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [user, params, overview, catalog, archivedCatalog] = await Promise.all([
+    requireUser(),
+    searchParams,
+    getWorkoutOverview(supabase),
+    getExerciseCatalog(supabase, userId),
+    getArchivedCustomExercises(supabase, userId),
   ]);
   const planningView = params.view === "exercises" ? "exercises" : "workouts";
 

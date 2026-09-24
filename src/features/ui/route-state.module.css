@@ -18,25 +18,6 @@
   gap: 10px;
 }
 
-.mark {
-  width: 28px;
-  height: 28px;
-  color: var(--accent);
-}
-
-.mark svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.brand {
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -.7px;
-}
-
-.brand span,
 .status {
   color: var(--accent);
 }

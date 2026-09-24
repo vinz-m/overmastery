@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { emptyGuidanceState } from "@/features/guidance/model";
-import { requireUser } from "@/lib/auth/session";
+import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { UnitSystem } from "@/lib/units";
 
@@ -24,7 +24,7 @@ export async function updateProfile(
   _previous: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  const user = await requireUser();
+  const userId = await requireUserId();
   const displayName = String(formData.get("displayName") ?? "").trim();
   const unitSystem = String(formData.get("unitSystem") ?? "") as UnitSystem;
   const timeZone = String(formData.get("timeZone") ?? "").trim();
@@ -49,7 +49,7 @@ export async function updateProfile(
       time_zone: timeZone,
       unit_system: unitSystem,
     })
-    .eq("id", user.id);
+    .eq("id", userId);
 
   if (error) return { message: "Your profile could not be saved." };
 
@@ -63,7 +63,7 @@ export async function resetGuidance(
 ): Promise<ProfileActionState> {
   void previousState;
   void formData;
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return { message: "Guidance could not be reset." };
@@ -84,7 +84,7 @@ export async function changePassword(
   _previous: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  await requireUser();
+  await requireUserId();
   const currentPassword = String(formData.get("currentPassword") ?? "");
   const newPassword = String(formData.get("newPassword") ?? "");
   const fieldErrors: NonNullable<ProfileActionState["fieldErrors"]> = {};

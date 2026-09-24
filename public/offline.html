@@ -15,26 +15,52 @@
     />
     <meta name="color-scheme" content="light dark" />
     <title>Offline · Overmastery</title>
+    <script>
+      // Match the theme chosen in the app (see src/features/theme/theme.ts).
+      try {
+        const saved = localStorage.getItem("overmastery-theme");
+        if (saved === "dark" || saved === "light") {
+          document.documentElement.dataset.theme = saved;
+        }
+      } catch {}
+    </script>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: dark;
         --background: #0d121c;
         --text: #e3f0ff;
         --muted: #a7b4c7;
         --accent: #8bd8bd;
         --accent-text: #10231e;
         --border: #29364a;
+        --brand-o: #e3f0ff;
+        --brand-m: #8bd8bd;
       }
 
       @media (prefers-color-scheme: light) {
-        :root {
+        :root:not([data-theme="dark"]) {
+          color-scheme: light;
           --background: #f6f8fb;
           --text: #162033;
           --muted: #59677b;
           --accent: #246b70;
           --accent-text: #ffffff;
           --border: #d5dce7;
+          --brand-o: #506aa3;
+          --brand-m: #246b70;
         }
+      }
+
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --background: #f6f8fb;
+        --text: #162033;
+        --muted: #59677b;
+        --accent: #246b70;
+        --accent-text: #ffffff;
+        --border: #d5dce7;
+        --brand-o: #506aa3;
+        --brand-m: #246b70;
       }
 
       * {
@@ -60,16 +86,31 @@
         padding-block: 3rem;
       }
 
-      .mark {
+      .brand {
+        display: inline-flex;
+        gap: 10px;
+        align-items: center;
+        justify-self: start;
         margin: 0 0 2.5rem;
-        font-size: 2.25rem;
-        font-weight: 780;
-        letter-spacing: -0.12em;
-        line-height: 1;
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: -0.7px;
       }
 
-      .mark span:last-child {
-        color: var(--accent);
+      .brand svg {
+        width: 48px;
+        height: 20px;
+        flex: none;
+      }
+
+      .brand-o {
+        color: var(--brand-o);
+        fill: var(--brand-o);
+      }
+
+      .brand-m {
+        color: var(--brand-m);
+        fill: var(--brand-m);
       }
 
       .status {
@@ -146,7 +187,13 @@
   </head>
   <body>
     <main>
-      <div class="mark" aria-label="Overmastery"><span>o</span><span>m</span></div>
+      <div class="brand" role="img" aria-label="Overmastery">
+        <svg aria-hidden="true" focusable="false" viewBox="1507 5157 10934 4348">
+          <path class="brand-o" d="M3753.989,9304.113c-324.444,0 -613.333,-48.889 -866.667,-146.667c-253.333,-97.778 -467.778,-233.333 -643.333,-406.667c-175.556,-173.333 -308.889,-373.333 -400,-600c-91.111,-226.667 -136.667,-468.889 -136.667,-726.667l0,-160c0,-266.667 47.778,-515.556 143.333,-746.667c95.556,-231.111 232.222,-433.333 410,-606.667c177.778,-173.333 393.333,-308.889 646.667,-406.667c253.333,-97.778 535.556,-146.667 846.667,-146.667c315.556,0 598.889,48.889 850,146.667c251.111,97.778 465.556,233.333 643.333,406.667c177.778,173.333 314.444,375.556 410,606.667c95.556,231.111 143.333,480 143.333,746.667l0,160c0,257.778 -45.556,500 -136.667,726.667c-91.111,226.667 -224.444,426.667 -400,600c-175.556,173.333 -390,308.889 -643.333,406.667c-253.333,97.778 -542.222,146.667 -866.667,146.667Zm0,-1013.333c186.667,0 341.111,-40 463.333,-120c122.222,-80 214.444,-192.222 276.667,-336.667c62.222,-144.444 93.333,-307.778 93.333,-490c0,-191.111 -32.222,-358.889 -96.667,-503.333c-64.444,-144.444 -158.889,-258.889 -283.333,-343.333c-124.444,-84.444 -275.556,-126.667 -453.333,-126.667c-177.778,0 -328.889,42.222 -453.333,126.667c-124.444,84.444 -218.889,198.889 -283.333,343.333c-64.444,144.444 -96.667,312.222 -96.667,503.333c0,182.222 31.111,345.556 93.333,490c62.222,144.444 155.556,256.667 280,336.667c124.444,80 277.778,120 460,120Z" />
+          <path class="brand-m" d="M6467.322,9170.78l0,-3680l960,0l0,1586.667l-53.333,0c0,-382.222 47.778,-698.889 143.333,-950c95.556,-251.111 236.667,-440 423.333,-566.667c186.667,-126.667 415.556,-190 686.667,-190l53.333,0c275.556,0 505.556,63.333 690,190c184.444,126.667 324.444,315.556 420,566.667c95.556,251.111 143.333,567.778 143.333,950l-280,0c0,-382.222 47.778,-698.889 143.333,-950c95.556,-251.111 236.667,-440 423.333,-566.667c186.667,-126.667 415.556,-190 686.667,-190l53.333,0c275.556,0 507.778,63.333 696.667,190c188.889,126.667 333.333,315.556 433.333,566.667c100,251.111 150,567.778 150,950l0,2093.333l-1213.333,0l0,-2126.667c0,-168.889 -45.556,-310 -136.667,-423.333c-91.111,-113.333 -221.111,-170 -390,-170c-168.889,0 -301.111,56.667 -396.667,170c-95.556,113.333 -143.333,258.889 -143.333,436.667l0,2113.333l-1213.333,0l0,-2126.667c0,-168.889 -45.556,-310 -136.667,-423.333c-91.111,-113.333 -221.111,-170 -390,-170c-168.889,0 -301.111,56.667 -396.667,170c-95.556,113.333 -143.333,258.889 -143.333,436.667l0,2113.333l-1213.333,0Z" />
+        </svg>
+        <span aria-hidden="true"><span class="brand-o">over</span><span class="brand-m">mastery</span></span>
+      </div>
       <div class="status">Connection paused</div>
       <h1>You’re offline.</h1>
       <p>

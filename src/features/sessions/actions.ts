@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { expirePreviousDaySession } from "./expire-session";
 import type { SessionMutationResult } from "./types";
-import { canAddExtraSet, exerciseStatusAfterSetChange } from "./set-policy";
+import { canAddExtraSet } from "./set-policy";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -169,7 +169,7 @@ export async function completeSet(input: {
     return failure("Enter a valid set.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: set } = await supabase
     .from("exercise_sets")
@@ -225,8 +225,7 @@ export async function completeSet(input: {
     .eq("id", set.id);
 
   if (error) return failure("The set could not be saved. Try again.");
-  await syncExerciseStatus(supabase, set.session_exercise_id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function reopenSet(input: {
@@ -237,7 +236,7 @@ export async function reopenSet(input: {
     return failure("This set could not be edited.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("exercise_sets")
@@ -261,8 +260,7 @@ export async function reopenSet(input: {
     .single();
 
   if (error || !set) return failure("This set could not be edited.");
-  await syncExerciseStatus(supabase, set.session_exercise_id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function addExtraSet(input: {
@@ -273,7 +271,7 @@ export async function addExtraSet(input: {
     return failure("A set could not be added.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
@@ -318,11 +316,7 @@ export async function addExtraSet(input: {
   });
 
   if (error) return failure("A set could not be added. Try again.");
-  await supabase
-    .from("session_exercises")
-    .update({ status: "planned" })
-    .eq("id", exercise.id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function removeWorkingSet(input: {
@@ -333,7 +327,7 @@ export async function removeWorkingSet(input: {
     return failure("This set could not be removed.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: set } = await supabase
     .from("exercise_sets")
@@ -381,8 +375,7 @@ export async function removeWorkingSet(input: {
     );
   }
 
-  await syncExerciseStatus(supabase, set.session_exercise_id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function restoreSkippedSet(input: {
@@ -393,7 +386,7 @@ export async function restoreSkippedSet(input: {
     return failure("This planned set could not be restored.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("exercise_sets")
@@ -416,8 +409,7 @@ export async function restoreSkippedSet(input: {
     .eq("status", "skipped");
   if (error) return failure("This planned set could not be restored.");
 
-  await syncExerciseStatus(supabase, existing.session_exercise_id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function restoreMissingPlannedSet(input: {
@@ -433,7 +425,7 @@ export async function restoreMissingPlannedSet(input: {
     return failure("This planned set could not be restored.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
@@ -459,8 +451,7 @@ export async function restoreMissingPlannedSet(input: {
   });
   if (error) return failure("This planned set could not be restored.");
 
-  await syncExerciseStatus(supabase, exercise.id);
-  return { ok: true };
+  return succeeded();
 }
 
 export async function skipExercise(input: {
@@ -471,7 +462,7 @@ export async function skipExercise(input: {
     return failure("This exercise could not be skipped.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
@@ -499,7 +490,7 @@ export async function skipExercise(input: {
 
   return error
     ? failure("This exercise could not be skipped.")
-    : { ok: true };
+    : succeeded();
 }
 
 export async function swapExercise(input: {
@@ -517,7 +508,7 @@ export async function swapExercise(input: {
     return failure("Choose a valid replacement.");
   }
 
-  await requireUser();
+  await requireUserId();
   const supabase = await createClient();
   const [{ data: current }, { data: replacement }] = await Promise.all([
     supabase
@@ -557,7 +548,7 @@ export async function swapExercise(input: {
     })
     .eq("id", current.id);
   if (updateError) return failure("The exercise could not be swapped.");
-  return { ok: true };
+  return succeeded();
 }
 
 export async function finishSession(
@@ -565,13 +556,13 @@ export async function finishSession(
 ): Promise<SessionMutationResult> {
   if (!uuidPattern.test(sessionId)) return failure("This workout is invalid.");
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const supabase = await createClient();
   const { data: session } = await supabase
     .from("training_sessions")
     .select("id, session_exercises ( id, exercise_sets ( id, status ) )")
     .eq("id", sessionId)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("status", "active")
     .single();
 
@@ -587,52 +578,54 @@ export async function finishSession(
     return failure("Complete at least one set before finishing.");
   }
 
-  for (const exercise of session.session_exercises) {
-    const performed = exercise.exercise_sets.some(
-      (set) => set.status === "completed",
-    );
-    await supabase
-      .from("exercise_sets")
-      .update({ status: "skipped" })
-      .eq("session_exercise_id", exercise.id)
-      .eq("status", "planned");
-    await supabase
-      .from("session_exercises")
-      .update({ status: performed ? "completed" : "skipped" })
-      .eq("id", exercise.id);
-  }
+  const performedIds = session.session_exercises
+    .filter((exercise) =>
+      exercise.exercise_sets.some((set) => set.status === "completed"),
+    )
+    .map((exercise) => exercise.id);
+  const unperformedIds = session.session_exercises
+    .map((exercise) => exercise.id)
+    .filter((id) => !performedIds.includes(id));
 
-  const { error } = await supabase
-    .from("training_sessions")
-    .update({ ended_at: new Date().toISOString(), status: "completed" })
-    .eq("id", session.id);
+  // Close open sets first: the status trigger recomputes exercise status on
+  // every set change, so the final exercise statuses must be written after.
+  await supabase
+    .from("exercise_sets")
+    .update({ status: "skipped" })
+    .in("session_exercise_id", session.session_exercises.map((exercise) => exercise.id))
+    .eq("status", "planned");
+  const [{ error }] = await Promise.all([
+    supabase
+      .from("training_sessions")
+      .update({ ended_at: new Date().toISOString(), status: "completed" })
+      .eq("id", session.id),
+    performedIds.length > 0 &&
+      supabase
+        .from("session_exercises")
+        .update({ status: "completed" })
+        .in("id", performedIds),
+    unperformedIds.length > 0 &&
+      supabase
+        .from("session_exercises")
+        .update({ status: "skipped" })
+        .in("id", unperformedIds),
+  ]);
   if (error) return failure("The workout could not be finished. Try again.");
 
   revalidatePath("/");
   redirect(`/sessions/${session.id}/summary`);
 }
 
-async function syncExerciseStatus(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  sessionExerciseId: string,
-) {
-  const { data } = await supabase
-    .from("exercise_sets")
-    .select("status")
-    .eq("session_exercise_id", sessionExerciseId);
-  const sets = data ?? [];
-  const status = exerciseStatusAfterSetChange(
-    sets.map((set) => set.status),
-  );
-
-  await supabase
-    .from("session_exercises")
-    .update({ status })
-    .eq("id", sessionExerciseId);
-}
-
 function validSessionInput(...values: string[]) {
   return values.every((value) => uuidPattern.test(value));
+}
+
+// Re-renders the current route inside this action's response, so the client
+// gets fresh data without a second request. Also purges the client cache so
+// other tabs don't show stale session state.
+function succeeded(): SessionMutationResult {
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 function failure(message: string): SessionMutationResult {

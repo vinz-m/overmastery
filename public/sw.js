@@ -1,7 +1,7 @@
 /* global caches */
 
 const CACHE_PREFIX = "overmastery-";
-const STATIC_CACHE = `${CACHE_PREFIX}static-v1`;
+const STATIC_CACHE = `${CACHE_PREFIX}static-v2`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v1`;
 
 const PRECACHE_URLS = [

@@ -601,7 +601,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      latest_exercise_performances: {
+        Args: {
+          p_ended_before?: string
+          p_exclude_session_id?: string
+          p_exercise_ids: string[]
+          p_workout_template_id?: string
+        }
+        Returns: {
+          exercise_id: string
+          load_kg: number | null
+          reps: number[]
+        }[]
+      }
     }
     Enums: {
       exercise_tracking_type:

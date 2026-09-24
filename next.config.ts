@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  experimental: {
+    // Reuse a visited tab for 30s instead of refetching it on every switch.
+    // Server Actions that revalidate still purge this cache immediately.
+    staleTimes: {
+      dynamic: 30,
+    },
+  },
   async headers() {
     return [
       {

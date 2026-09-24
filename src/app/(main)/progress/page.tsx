@@ -1,16 +1,19 @@
 import { getProgressOverview } from "@/features/progress/data";
 import { ProgressHome } from "@/features/progress/progress-home";
-import { requireUser } from "@/lib/auth/session";
+import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProgressPage() {
-  const user = await requireUser();
-  const supabase = await createClient();
-  const { exercises, sessions } = await getProgressOverview(
-    supabase,
-    user.id,
-    user.unitSystem,
-  );
+  const [userId, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const userPromise = requireUser();
+  const [user, { exercises, sessions }] = await Promise.all([
+    userPromise,
+    getProgressOverview(
+      supabase,
+      userId,
+      userPromise.then((user) => user.unitSystem),
+    ),
+  ]);
 
   return (
     <ProgressHome

@@ -62,22 +62,27 @@ const historySelection = `
   )
 `;
 
+// unitSystem arrives as a promise so the history query can start before the
+// profile read finishes; it is only needed once rows are being shaped.
 export async function getProgressOverview(
   supabase: Client,
   userId: string,
-  unitSystem: UnitSystem,
+  unitSystem: Promise<UnitSystem>,
 ) {
-  const { data, error } = await supabase
-    .from("training_sessions")
-    .select(historySelection)
-    .eq("user_id", userId)
-    .eq("status", "completed")
-    .order("ended_at", { ascending: false })
-    .limit(24);
+  const [{ data, error }, units] = await Promise.all([
+    supabase
+      .from("training_sessions")
+      .select(historySelection)
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .order("ended_at", { ascending: false })
+      .limit(24),
+    unitSystem,
+  ]);
 
   if (error) throw new Error("Training history could not be loaded.");
 
-  const sessions = buildHistory((data ?? []) as HistoryRow[], unitSystem);
+  const sessions = buildHistory((data ?? []) as HistoryRow[], units);
   const exerciseIndex = buildExerciseIndex(sessions);
 
   return {
@@ -93,56 +98,103 @@ export async function getHistorySession(
   supabase: Client,
   userId: string,
   sessionId: string,
-  unitSystem: UnitSystem,
+  unitSystem: Promise<UnitSystem>,
 ) {
   const { data: target, error: targetError } = await supabase
     .from("training_sessions")
-    .select("ended_at")
+    .select(historySelection)
     .eq("id", sessionId)
     .eq("user_id", userId)
     .eq("status", "completed")
     .maybeSingle();
 
   if (targetError) throw new Error("Session history could not be loaded.");
-  if (!target?.ended_at) return null;
+  const row = target as HistoryRow | null;
+  if (!row?.ended_at) return null;
 
-  const { data, error } = await supabase
-    .from("training_sessions")
-    .select(historySelection)
-    .eq("user_id", userId)
-    .eq("status", "completed")
-    .lte("ended_at", target.ended_at)
-    .order("ended_at", { ascending: false })
-    .limit(100);
+  const exerciseIds = row.session_exercises
+    .map((exercise) => exercise.exercise_id)
+    .filter((id): id is string => Boolean(id));
+  const [{ data: previousRows, error }, units] = await Promise.all([
+    exerciseIds.length > 0
+      ? supabase.rpc("latest_exercise_performances", {
+          p_ended_before: row.ended_at,
+          p_exclude_session_id: row.id,
+          p_exercise_ids: exerciseIds,
+        })
+      : { data: [], error: null },
+    unitSystem,
+  ]);
 
   if (error) throw new Error("Session history could not be loaded.");
-  return buildHistory((data ?? []) as HistoryRow[], unitSystem).find(
-    (session) => session.id === sessionId,
-  ) ?? null;
+  const previous = new Map<string, PreviousPerformance>(
+    (previousRows ?? []).map((performance) => [
+      performance.exercise_id,
+      { loadKg: performance.load_kg, reps: performance.reps },
+    ]),
+  );
+
+  return buildHistory([row], units, previous)[0] ?? null;
 }
 
 export async function getExerciseTimeline(
   supabase: Client,
   userId: string,
   exerciseId: string,
-  unitSystem: UnitSystem,
+  unitSystem: Promise<UnitSystem>,
 ) {
-  const { data, error } = await supabase
-    .from("training_sessions")
-    .select(historySelection)
-    .eq("user_id", userId)
-    .eq("status", "completed")
-    .order("ended_at", { ascending: false })
-    .limit(100);
+  // Read only this exercise's rows instead of whole sessions.
+  const [{ data, error }, units] = await Promise.all([
+    supabase
+      .from("session_exercises")
+      .select(`
+        exercise_id,
+        exercise_name,
+        id,
+        position,
+        status,
+        tracking_type,
+        workout_template_exercises ( target_sets ),
+        exercise_sets (
+          assistance_kg,
+          planned_reps,
+          position,
+          reps,
+          status,
+          weight_kg
+        ),
+        training_sessions!inner ( ended_at, id, started_at, template_name )
+      `)
+      .eq("exercise_id", exerciseId)
+      .eq("training_sessions.user_id", userId)
+      .eq("training_sessions.status", "completed")
+      .order("training_sessions(ended_at)", { ascending: false })
+      .limit(100),
+    unitSystem,
+  ]);
 
   if (error) throw new Error("Exercise history could not be loaded.");
-  return buildExerciseIndex(buildHistory((data ?? []) as HistoryRow[], unitSystem)).get(
+
+  const sessions = new Map<string, HistoryRow>();
+  for (const { training_sessions: session, ...exercise } of data ?? []) {
+    const existing = sessions.get(session.id);
+    if (existing) {
+      existing.session_exercises.push(exercise);
+    } else {
+      sessions.set(session.id, { ...session, session_exercises: [exercise] });
+    }
+  }
+
+  return buildExerciseIndex(buildHistory([...sessions.values()], units)).get(
     exerciseId,
   ) ?? null;
 }
 
-function buildHistory(rows: HistoryRow[], unitSystem: UnitSystem): HistorySession[] {
-  const previousByExercise = new Map<string, PreviousPerformance>();
+function buildHistory(
+  rows: HistoryRow[],
+  unitSystem: UnitSystem,
+  previousByExercise = new Map<string, PreviousPerformance>(),
+): HistorySession[] {
   const chronological = [...rows].sort((left, right) =>
     (left.ended_at ?? left.started_at).localeCompare(
       right.ended_at ?? right.started_at,
