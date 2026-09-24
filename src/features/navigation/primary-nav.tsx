@@ -38,7 +38,13 @@ export function PrimaryNav({ dayEndsAt }: { dayEndsAt: string }) {
   return (
     <>
       <SessionDayRefresh dayEndsAt={dayEndsAt} />
-      <nav className={styles.nav} aria-label="Primary navigation">
+      {/* Named inline, not in the CSS module: modules rewrite the name, and the
+          view-transition rules in globals.css target it as "primary-nav". */}
+      <nav
+        aria-label="Primary navigation"
+        className={styles.nav}
+        style={{ viewTransitionName: "primary-nav" }}
+      >
         {destinations.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;

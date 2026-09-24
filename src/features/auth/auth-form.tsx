@@ -1,13 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useRef } from "react";
-import { ArrowRightIcon } from "@phosphor-icons/react";
+import { useActionState, useEffect, useRef } from "react";
 
-import { signIn, signUp, type AuthActionState } from "./actions";
+import {
+  requestPasswordReset,
+  signIn,
+  signUp,
+  updatePassword,
+  type AuthActionState,
+} from "./actions";
+import { Field, FormStatus, PasswordField, SubmitButton } from "./auth-fields";
 import styles from "./auth.module.css";
 
 const initialState: AuthActionState = {};
+
+/** Moves focus to the first field the server rejected. */
+function useFocusFirstError(state: AuthActionState) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const first = (["displayName", "email", "password"] as const).find(
+      (name) => state.fieldErrors?.[name],
+    );
+    if (!first) return;
+    formRef.current
+      ?.querySelector<HTMLInputElement>(`[name="${first}"]`)
+      ?.focus();
+  }, [state.fieldErrors]);
+  return formRef;
+}
 
 export function AuthForm({
   mode,
@@ -16,26 +37,12 @@ export function AuthForm({
   mode: "login" | "signup";
   notice?: string;
 }) {
-  const action = mode === "login" ? signIn : signUp;
-  const [state, formAction, pending] = useActionState(action, initialState);
   const isLogin = mode === "login";
-  const formRef = useRef<HTMLFormElement>(null);
-  const actionError = state.success ? undefined : state.message;
-  const successMessage = state.success ? state.message : undefined;
-
-  useEffect(() => {
-    const firstInvalidField = ["displayName", "email", "password"].find(
-      (fieldName) =>
-        state.fieldErrors?.[
-          fieldName as keyof NonNullable<AuthActionState["fieldErrors"]>
-        ],
-    );
-
-    if (!firstInvalidField) return;
-    formRef.current
-      ?.querySelector<HTMLInputElement>(`[name="${firstInvalidField}"]`)
-      ?.focus();
-  }, [state.fieldErrors]);
+  const [state, formAction, pending] = useActionState(
+    isLogin ? signIn : signUp,
+    initialState,
+  );
+  const formRef = useFocusFirstError(state);
 
   return (
     <form
@@ -53,6 +60,7 @@ export function AuthForm({
       {!isLogin && (
         <Field
           autoComplete="name"
+          defaultValue={state.fields?.displayName}
           error={state.fieldErrors?.displayName}
           label="Name"
           maxLength={80}
@@ -63,9 +71,9 @@ export function AuthForm({
           type="text"
         />
       )}
-
       <Field
         autoComplete="email"
+        defaultValue={state.fields?.email}
         error={state.fieldErrors?.email}
         label="Email"
         maxLength={254}
@@ -74,116 +82,94 @@ export function AuthForm({
         required
         type="email"
       />
-
-      <Field
+      <PasswordField
         autoComplete={isLogin ? "current-password" : "new-password"}
         error={state.fieldErrors?.password}
-        hint={isLogin ? undefined : "8 characters minimum"}
+        hint={
+          isLogin ? (
+            <Link className={styles.inlineLink} href="/forgot-password">
+              Forgot password?
+            </Link>
+          ) : (
+            "8 characters minimum"
+          )
+        }
         label="Password"
-        minLength={8}
-        name="password"
-        placeholder="••••••••"
-        required
-        type="password"
       />
-
-      <p
-        aria-atomic="true"
-        className={actionError ? styles.error : styles.liveRegion}
-        role="alert"
+      <FormStatus
+        error={state.success ? undefined : state.message}
+        success={state.success ? state.message : undefined}
+      />
+      <SubmitButton
+        pending={pending}
+        pendingLabel={isLogin ? "Signing in…" : "Creating account…"}
       >
-        {actionError ?? ""}
-      </p>
-      <p
-        aria-atomic="true"
-        className={successMessage ? styles.success : styles.liveRegion}
-        role="status"
-      >
-        {successMessage ?? ""}
-      </p>
-
-      <button className={styles.submit} disabled={pending} type="submit">
-        <span>
-          {pending
-            ? isLogin
-              ? "Signing in…"
-              : "Creating account…"
-            : isLogin
-              ? "Sign in"
-              : "Create account"}
-        </span>
-        <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
-      </button>
-
-      <p className={styles.switchMode}>
-        {isLogin ? "New to Overmastery?" : "Already have an account?"}{" "}
-        <Link href={isLogin ? "/signup" : "/login"}>
-          {isLogin ? "Create an account" : "Sign in"}
-        </Link>
-      </p>
+        {isLogin ? "Sign in" : "Create account"}
+      </SubmitButton>
     </form>
   );
 }
 
-type FieldProps = {
-  autoComplete: string;
-  error?: string;
-  hint?: string;
-  label: string;
-  maxLength?: number;
-  minLength?: number;
-  name: string;
-  placeholder: string;
-  required?: boolean;
-  type: "email" | "password" | "text";
-};
-
-function Field({
-  autoComplete,
-  error,
-  hint,
-  label,
-  maxLength,
-  minLength,
-  name,
-  placeholder,
-  required,
-  type,
-}: FieldProps) {
-  const inputId = useId();
-  const errorId = `${inputId}-error`;
-  const hintId = `${inputId}-hint`;
-  const describedBy =
-    [hint ? hintId : undefined, error ? errorId : undefined]
-      .filter(Boolean)
-      .join(" ") || undefined;
-
+export function ForgotPasswordForm() {
+  const [state, formAction, pending] = useActionState(
+    requestPasswordReset,
+    initialState,
+  );
+  const formRef = useFocusFirstError(state);
   return (
-    <div className={styles.field}>
-      <div className={styles.fieldLabel}>
-        <label htmlFor={inputId}>{label}</label>
-        {hint && <small id={hintId}>{hint}</small>}
-      </div>
-      <input
-        aria-describedby={describedBy}
-        aria-invalid={Boolean(error)}
-        autoComplete={autoComplete}
-        autoCapitalize={type === "text" ? "words" : "none"}
-        id={inputId}
-        inputMode={type === "email" ? "email" : undefined}
-        maxLength={maxLength}
-        minLength={minLength}
-        name={name}
-        placeholder={placeholder}
-        required={required}
-        spellCheck={type === "text"}
-        type={type}
+    <form
+      action={formAction}
+      aria-busy={pending}
+      className={styles.form}
+      noValidate
+      ref={formRef}
+    >
+      <Field
+        autoComplete="email"
+        defaultValue={state.fields?.email}
+        error={state.fieldErrors?.email}
+        label="Email"
+        maxLength={254}
+        name="email"
+        placeholder="you@example.com"
+        required
+        type="email"
       />
-      {error && (
-        <span className={styles.fieldError} id={errorId}>
-          {error}
-        </span>
-      )}
-    </div>
+      <FormStatus
+        error={state.success ? undefined : state.message}
+        success={state.success ? state.message : undefined}
+      />
+      <SubmitButton pending={pending} pendingLabel="Sending link…">
+        Send reset link
+      </SubmitButton>
+    </form>
+  );
+}
+
+export function ResetPasswordForm() {
+  const [state, formAction, pending] = useActionState(
+    updatePassword,
+    initialState,
+  );
+  const formRef = useFocusFirstError(state);
+  return (
+    <form
+      action={formAction}
+      aria-busy={pending}
+      className={styles.form}
+      noValidate
+      ref={formRef}
+    >
+      <PasswordField
+        autoComplete="new-password"
+        error={state.fieldErrors?.password}
+        hint="8 characters minimum"
+        label="New password"
+      />
+      <FormStatus error={state.message} />
+      <SubmitButton pending={pending} pendingLabel="Saving…">
+        Save new password
+      </SubmitButton>
+    </form>
   );
 }

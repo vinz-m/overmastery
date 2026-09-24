@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { AuthForm } from "@/features/auth/auth-form";
 import { AuthShell } from "@/features/auth/auth-shell";
 import { redirectAuthenticatedUser } from "@/lib/auth/session";
@@ -7,8 +9,12 @@ export default async function SignupPage() {
 
   return (
     <AuthShell
-      copy="Build a training record that remembers the work, shows what changed, and gives every session a clear line to beat."
-      eyebrow="Start your record"
+      copy="Log every set, see what changed, and always know the line to beat next time."
+      footer={
+        <>
+          Already have an account? <Link href="/login">Sign in</Link>
+        </>
+      }
       title="Make every set count."
     >
       <AuthForm mode="signup" />

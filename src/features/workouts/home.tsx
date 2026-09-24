@@ -20,6 +20,7 @@ import type {
 import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
 import { selectNextWorkout } from "./workout-overview";
 import { StartWorkoutForm } from "./start-workout-form";
+import { WorkoutPreview } from "./workout-preview";
 import {
   WorkoutPlanningWorkspace,
   type PlanningView,
@@ -110,9 +111,6 @@ export function WorkoutHome({
   );
 }
 
-// Enough to preview the session without turning the card into the full plan.
-const previewLimit = 5;
-
 function Today({
   accountLabel,
   activeSession,
@@ -189,28 +187,17 @@ function Today({
           </div>
           <h2>{featured.name}</h2>
           {featured.exercises.length > 0 ? (
-            <ol
-              aria-label="Exercises and your last result"
-              className={styles.workoutPreview}
-            >
-              {featured.exercises.slice(0, previewLimit).map((exercise) => (
-                <li key={exercise.exerciseId}>
-                  <span>{exercise.name}</span>
-                  <small>
-                    {lastResult(
-                      exercise.trackingType,
-                      featuredPrevious[exercise.exerciseId],
-                      unitSystem,
-                    )}
-                  </small>
-                </li>
-              ))}
-              {featured.exercises.length > previewLimit && (
-                <li className={styles.previewMore}>
-                  +{featured.exercises.length - previewLimit} more
-                </li>
-              )}
-            </ol>
+            <WorkoutPreview
+              rows={featured.exercises.map((exercise) => ({
+                id: exercise.exerciseId,
+                name: exercise.name,
+                result: lastResult(
+                  exercise.trackingType,
+                  featuredPrevious[exercise.exerciseId],
+                  unitSystem,
+                ),
+              }))}
+            />
           ) : (
             <p>
               {featured.firstTarget ?? `${featured.exerciseCount} exercises`}
