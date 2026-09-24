@@ -4,6 +4,7 @@ import { CreateWorkoutBuilder } from "@/features/workouts/create-workout-builder
 import { getExerciseCatalog, getWorkoutTemplate } from "@/features/workouts/data";
 import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { PageTransition } from "@/features/navigation/page-transition";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -24,10 +25,12 @@ export default async function EditWorkoutPage({
   if (!workout) notFound();
 
   return (
-    <CreateWorkoutBuilder
-      catalog={catalog}
-      initialGuidance={user.guidance}
-      workout={workout}
-    />
+    <PageTransition>
+      <CreateWorkoutBuilder
+        catalog={catalog}
+        initialGuidance={user.guidance}
+        workout={workout}
+      />
+    </PageTransition>
   );
 }

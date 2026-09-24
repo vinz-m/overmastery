@@ -6,6 +6,7 @@ import {
 import { WorkoutHome } from "@/features/workouts/home";
 import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { PageTransition } from "@/features/navigation/page-transition";
 
 export default async function WorkoutsPage({
   searchParams,
@@ -23,17 +24,19 @@ export default async function WorkoutsPage({
   const planningView = params.view === "exercises" ? "exercises" : "workouts";
 
   return (
-    <WorkoutHome
-      activeSession={overview.activeSession}
-      archivedCatalog={archivedCatalog}
-      catalog={catalog}
-      displayName={user.displayName}
-      email={user.email}
-      guidance={user.guidance}
-      planningView={planningView}
-      timeZone={user.timeZone}
-      view="workouts"
-      workouts={overview.workouts}
-    />
+    <PageTransition>
+      <WorkoutHome
+        activeSession={overview.activeSession}
+        archivedCatalog={archivedCatalog}
+        catalog={catalog}
+        displayName={user.displayName}
+        email={user.email}
+        guidance={user.guidance}
+        planningView={planningView}
+        timeZone={user.timeZone}
+        view="workouts"
+        workouts={overview.workouts}
+      />
+    </PageTransition>
   );
 }

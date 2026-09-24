@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 
 import { AppHeader } from "@/features/navigation/app-header";
 import { PrimaryNav } from "@/features/navigation/primary-nav";
-import { expirePreviousDaySession } from "@/features/sessions/expire-session";
+import { DeviceTimeZoneSync } from "@/features/profile/device-time-zone-sync";
+import { expireStaleSession } from "@/features/sessions/expire-session";
 import { requireUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,13 +14,8 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
   const supabase = await createClient();
 
   // This route-group layout persists while the user moves between primary tabs,
-  // so the day-boundary check runs on app entry instead of blocking every tab.
-  await expirePreviousDaySession(
-    supabase,
-    user.id,
-    user.timeZone,
-    new Date(),
-  );
+  // so the stale-session check runs on app entry instead of blocking every tab.
+  await expireStaleSession(supabase, user.id);
 
   const accountLabel = user.displayName || user.email?.split("@")[0] || "You";
 
@@ -29,6 +25,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
         <AppHeader accountLabel={accountLabel} />
         {children}
         <PrimaryNav dayEndsAt={user.dayEndsAt} />
+        {user.timeZone === "UTC" && <DeviceTimeZoneSync />}
       </section>
     </div>
   );

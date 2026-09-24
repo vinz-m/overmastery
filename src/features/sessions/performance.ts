@@ -22,6 +22,7 @@ export function completedPerformance(
   return {
     loadKg: completed[0]?.loadKg ?? null,
     reps: completed.map((set) => set.reps!),
+    unit: completed[0]?.enteredUnit ?? null,
   };
 }
 

@@ -36,6 +36,7 @@ import styles from "./create-workout.module.css";
 
 const MotionCaretDown = motion.create(CaretDownIcon);
 import type { ExerciseCatalogItem, WorkoutExerciseDraft, WorkoutTemplateDraft } from "./types";
+import { navBack } from "@/features/navigation/page-transition";
 
 const initialWorkoutState: CreateWorkoutState = {};
 const initialExerciseState: CreateExerciseState = {};
@@ -156,7 +157,7 @@ export function CreateWorkoutBuilder({
     <main className={styles.page}>
       <form action={workoutAction} className={styles.builder}>
         <header className={styles.topbar}>
-          <Link href="/workouts" aria-label={workout ? "Cancel workout editing" : "Cancel workout creation"}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
+          <Link href="/workouts" transitionTypes={navBack} aria-label={workout ? "Cancel workout editing" : "Cancel workout creation"}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <strong>{workout ? "EDIT WORKOUT" : "NEW WORKOUT"}</strong>
           <button disabled={workoutPending || selected.length === 0} type="submit">
             {workoutPending ? "Saving…" : "Save"}

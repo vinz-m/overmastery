@@ -22,6 +22,7 @@ type HistoryRow = {
     exercise_name: string;
     exercise_sets: Array<{
       assistance_kg: number | null;
+      entered_unit: UnitSystem | null;
       planned_reps: number | null;
       position: number;
       reps: number | null;
@@ -32,7 +33,7 @@ type HistoryRow = {
     position: number;
     status: Database["public"]["Enums"]["session_exercise_status"];
     tracking_type: TrackingType;
-    workout_template_exercises: { target_sets: number } | null;
+    target_sets: number | null;
   }>;
   started_at: string;
   template_name: string | null;
@@ -50,9 +51,10 @@ const historySelection = `
     position,
     status,
     tracking_type,
-    workout_template_exercises ( target_sets ),
+    target_sets,
     exercise_sets (
       assistance_kg,
+      entered_unit,
       planned_reps,
       position,
       reps,
@@ -154,9 +156,10 @@ export async function getExerciseTimeline(
         position,
         status,
         tracking_type,
-        workout_template_exercises ( target_sets ),
+        target_sets,
         exercise_sets (
           assistance_kg,
+          entered_unit,
           planned_reps,
           position,
           reps,
@@ -215,13 +218,14 @@ function buildHistory(
                   ? completed[0].assistance_kg
                   : completed[0].weight_kg,
               reps: completed.map((set) => set.reps!),
+              unit: completed[0].entered_unit,
             }
           : null;
         const previous = exercise.exercise_id
           ? previousByExercise.get(exercise.exercise_id)
           : undefined;
         const comparison: PerformanceComparison = previous
-          ? comparePerformance(current, previous, exercise.tracking_type, unitSystem)
+          ? comparePerformance(current, previous, exercise.tracking_type, current?.unit ?? unitSystem)
           : current
             ? { label: "Baseline recorded", state: "new" }
             : { label: "No completed sets", state: "new" };
@@ -229,10 +233,10 @@ function buildHistory(
           (set) => set.planned_reps !== null,
         ).length;
         const plannedSets =
-          exercise.workout_template_exercises?.target_sets ??
+          exercise.target_sets ??
           storedPlannedSets;
         const plannedCompletedSets = completed.filter((set) =>
-          exercise.workout_template_exercises
+          exercise.target_sets !== null
             ? set.position < plannedSets
             : set.planned_reps !== null,
         ).length;
@@ -256,6 +260,7 @@ function buildHistory(
             (set) => set.status === "skipped" && set.planned_reps !== null,
           ).length,
           trackingType: exercise.tracking_type,
+          unit: current?.unit ?? null,
         };
       });
 

@@ -53,8 +53,45 @@ export async function updateProfile(
 
   if (error) return { message: "Your profile could not be saved." };
 
+  // "UTC" is also the signup default that the device sync replaces, so record
+  // that this one was chosen on purpose. Other zones never get replaced.
+  if (timeZone === "UTC") await markTimeZoneChosen(supabase);
+
   revalidatePath("/", "layout");
   return { message: "Profile settings saved.", success: true };
+}
+
+// Profiles are created with the "UTC" default because signup runs before the
+// app knows the device's zone. Adopt the device zone once, and only while the
+// profile still holds that default, so an explicit choice is never overwritten.
+// Returns false when the user deliberately chose UTC, so the client stops asking.
+export async function adoptDeviceTimeZone(timeZone: string) {
+  const userId = await requireUserId();
+  if (!isTimeZone(timeZone) || timeZone === "UTC") return true;
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (auth.user?.user_metadata?.[timeZoneChosenKey] === true) return false;
+
+  const { data } = await supabase
+    .from("profiles")
+    .update({ time_zone: timeZone })
+    .eq("id", userId)
+    .eq("time_zone", "UTC")
+    .select("id");
+
+  if (data?.length) revalidatePath("/", "layout");
+  return true;
+}
+
+const timeZoneChosenKey = "overmastery_time_zone_chosen";
+
+async function markTimeZoneChosen(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return;
+  await supabase.auth.updateUser({
+    data: { ...data.user.user_metadata, [timeZoneChosenKey]: true },
+  });
 }
 
 export async function resetGuidance(

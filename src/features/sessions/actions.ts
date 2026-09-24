@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireUser, requireUserId } from "@/lib/auth/session";
+import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
-import { expirePreviousDaySession } from "./expire-session";
+import { closeExpiredSession, expireStaleSession } from "./expire-session";
+import { isSessionExpired } from "./session-day";
 import type { SessionMutationResult } from "./types";
 import { canAddExtraSet } from "./set-policy";
 
@@ -28,13 +29,13 @@ export async function startWorkout(
     return { message: "This workout is invalid. Refresh and try again." };
   }
 
-  const user = await requireUser();
+  const userId = await requireUserId();
   const supabase = await createClient();
-  await expirePreviousDaySession(supabase, user.id, user.timeZone);
+  await expireStaleSession(supabase, userId);
   const { data: existing } = await supabase
     .from("training_sessions")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("status", "active")
     .maybeSingle();
 
@@ -50,6 +51,7 @@ export async function startWorkout(
         id,
         position,
         target_rep_max,
+        target_rep_min,
         target_sets,
         exercises (
           id,
@@ -89,7 +91,7 @@ export async function startWorkout(
     .insert({
       source_workout_template_id: template.id,
       template_name: template.name,
-      user_id: user.id,
+      user_id: userId,
     })
     .select("id")
     .single();
@@ -98,7 +100,7 @@ export async function startWorkout(
     const { data: racedSession } = await supabase
       .from("training_sessions")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "active")
       .maybeSingle();
     if (racedSession) redirect(`/sessions/${racedSession.id}`);
@@ -113,7 +115,11 @@ export async function startWorkout(
         exercise_name: item.exercises!.name,
         is_unilateral: item.exercises!.is_unilateral,
         position: item.position,
+        default_rest_seconds: item.default_rest_seconds,
         source_template_exercise_id: item.id,
+        target_rep_max: item.target_rep_max,
+        target_rep_min: item.target_rep_min,
+        target_sets: item.target_sets,
         tracking_type: item.exercises!.tracking_type,
         training_session_id: session.id,
       })),
@@ -156,6 +162,7 @@ export async function startWorkout(
 
 export async function completeSet(input: {
   loadKg: number | null;
+  loadUnit: "imperial" | "metric" | null;
   reps: number;
   sessionId: string;
   setId: string;
@@ -164,7 +171,8 @@ export async function completeSet(input: {
     !validSessionInput(input.sessionId, input.setId) ||
     !Number.isInteger(input.reps) ||
     input.reps < 0 ||
-    input.reps > 1000
+    input.reps > 1000 ||
+    (input.loadUnit !== null && input.loadUnit !== "metric" && input.loadUnit !== "imperial")
   ) {
     return failure("Enter a valid set.");
   }
@@ -179,7 +187,7 @@ export async function completeSet(input: {
       session_exercises (
         tracking_type,
         training_session_id,
-        training_sessions ( status )
+        training_sessions ( started_at, status )
       )
     `)
     .eq("id", input.setId)
@@ -193,6 +201,10 @@ export async function completeSet(input: {
     exercise.training_sessions?.status !== "active"
   ) {
     return failure("This workout is no longer active.");
+  }
+  if (isSessionExpired(exercise.training_sessions.started_at)) {
+    await closeExpiredSession(supabase, input.sessionId, exercise.training_sessions.started_at);
+    return failure("This workout was closed automatically after 6 hours. Start a new one to keep logging.");
   }
 
   const trackingType = exercise.tracking_type;
@@ -214,6 +226,7 @@ export async function completeSet(input: {
       assistance_kg:
         trackingType === "assistance_reps" ? input.loadKg : null,
       completed_at: now,
+      entered_unit: loadRequired ? input.loadUnit : null,
       reps: input.reps,
       status: "completed",
       weight_kg:
@@ -279,7 +292,7 @@ export async function addExtraSet(input: {
       id,
       training_session_id,
       training_sessions ( status ),
-      workout_template_exercises ( target_sets ),
+      target_sets,
       exercise_sets ( planned_reps, position, status )
     `)
     .eq("id", input.sessionExerciseId)
@@ -293,7 +306,7 @@ export async function addExtraSet(input: {
     return failure("This workout is no longer active.");
   }
 
-  const sourceTarget = exercise.workout_template_exercises?.target_sets;
+  const sourceTarget = exercise.target_sets;
   const canAdd = canAddExtraSet(
     exercise.exercise_sets.map((set) => ({
       isPlanned:
@@ -331,7 +344,7 @@ export async function removeWorkingSet(input: {
   const supabase = await createClient();
   const { data: set } = await supabase
     .from("exercise_sets")
-    .select("id, planned_reps, position, status, session_exercise_id, session_exercises ( training_session_id, training_sessions ( status ), workout_template_exercises ( target_sets ), exercise_sets ( id, status ) )")
+    .select("id, planned_reps, position, status, session_exercise_id, session_exercises ( training_session_id, target_sets, training_sessions ( status ), exercise_sets ( id, status ) )")
     .eq("id", input.setId)
     .single();
 
@@ -347,8 +360,7 @@ export async function removeWorkingSet(input: {
     return failure("Keep at least one working set.");
   }
 
-  const sourceTarget =
-    set.session_exercises.workout_template_exercises?.target_sets;
+  const sourceTarget = set.session_exercises.target_sets;
   const isPlanned =
     sourceTarget !== undefined && sourceTarget !== null
       ? set.position < sourceTarget
@@ -429,10 +441,12 @@ export async function restoreMissingPlannedSet(input: {
   const supabase = await createClient();
   const { data: exercise } = await supabase
     .from("session_exercises")
-    .select("id, training_session_id, training_sessions ( status ), workout_template_exercises ( target_rep_max, target_sets ), exercise_sets ( position )")
+    .select("id, training_session_id, training_sessions ( status ), target_rep_max, target_sets, exercise_sets ( position )")
     .eq("id", input.sessionExerciseId)
     .single();
-  const source = exercise?.workout_template_exercises;
+  const source = exercise && exercise.target_sets !== null
+    ? { target_rep_max: exercise.target_rep_max, target_sets: exercise.target_sets }
+    : null;
   if (
     !exercise ||
     !source ||
@@ -479,17 +493,19 @@ export async function skipExercise(input: {
     return failure("An exercise with completed sets cannot be skipped.");
   }
 
-  await supabase
+  const { error: setsError } = await supabase
     .from("exercise_sets")
     .update({ status: "skipped" })
     .eq("session_exercise_id", exercise.id);
+  if (setsError) return failure("This exercise could not be skipped.");
+
   const { error } = await supabase
     .from("session_exercises")
     .update({ status: "skipped" })
     .eq("id", exercise.id);
 
   return error
-    ? failure("This exercise could not be skipped.")
+    ? failure("This exercise could not be skipped. Try again.")
     : succeeded();
 }
 
@@ -556,64 +572,69 @@ export async function finishSession(
 ): Promise<SessionMutationResult> {
   if (!uuidPattern.test(sessionId)) return failure("This workout is invalid.");
 
+  await requireUserId();
+  const supabase = await createClient();
+  // One transaction: open sets are skipped, exercises settled, session closed.
+  const { data: outcome, error } = await supabase.rpc("finish_session", {
+    p_session_id: sessionId,
+  });
+
+  if (error) return failure("The workout could not be finished. Try again.");
+  if (outcome === "not_active") return failure("This workout is no longer active.");
+  if (outcome === "no_sets") return failure("Complete at least one set before finishing.");
+
+  revalidatePath("/", "layout");
+  redirect(`/sessions/${sessionId}/summary`);
+}
+
+export type DiscardSessionState = {
+  message?: string;
+};
+
+// A workout with nothing logged was most likely started by accident, so it is
+// deleted outright (its exercises and sets cascade). Once sets are logged it is
+// closed as abandoned instead, like the day-boundary expiry, so the data isn't
+// lost but never reaches history, progress, or previous-performance prefill.
+export async function discardSession(
+  sessionId: string,
+  previousState: DiscardSessionState,
+  formData: FormData,
+): Promise<DiscardSessionState> {
+  void previousState;
+  void formData;
+  if (!uuidPattern.test(sessionId)) return { message: "This workout is invalid." };
+
   const userId = await requireUserId();
   const supabase = await createClient();
   const { data: session } = await supabase
     .from("training_sessions")
-    .select("id, session_exercises ( id, exercise_sets ( id, status ) )")
+    .select("id, session_exercises ( exercise_sets ( status ) )")
     .eq("id", sessionId)
     .eq("user_id", userId)
     .eq("status", "active")
-    .single();
+    .maybeSingle();
 
-  if (!session) return failure("This workout is no longer active.");
+  if (!session) return { message: "This workout is no longer active." };
 
-  const completedSetCount = session.session_exercises.reduce(
-    (count, exercise) =>
-      count +
-      exercise.exercise_sets.filter((set) => set.status === "completed").length,
-    0,
+  const hasLoggedSets = session.session_exercises.some((exercise) =>
+    exercise.exercise_sets.some((set) => set.status === "completed"),
   );
-  if (completedSetCount === 0) {
-    return failure("Complete at least one set before finishing.");
-  }
+  const { error } = hasLoggedSets
+    ? await supabase
+        .from("training_sessions")
+        .update({ ended_at: new Date().toISOString(), status: "abandoned" })
+        .eq("id", session.id)
+        .eq("status", "active")
+    : await supabase
+        .from("training_sessions")
+        .delete()
+        .eq("id", session.id)
+        .eq("status", "active");
 
-  const performedIds = session.session_exercises
-    .filter((exercise) =>
-      exercise.exercise_sets.some((set) => set.status === "completed"),
-    )
-    .map((exercise) => exercise.id);
-  const unperformedIds = session.session_exercises
-    .map((exercise) => exercise.id)
-    .filter((id) => !performedIds.includes(id));
+  if (error) return { message: "The workout could not be discarded. Try again." };
 
-  // Close open sets first: the status trigger recomputes exercise status on
-  // every set change, so the final exercise statuses must be written after.
-  await supabase
-    .from("exercise_sets")
-    .update({ status: "skipped" })
-    .in("session_exercise_id", session.session_exercises.map((exercise) => exercise.id))
-    .eq("status", "planned");
-  const [{ error }] = await Promise.all([
-    supabase
-      .from("training_sessions")
-      .update({ ended_at: new Date().toISOString(), status: "completed" })
-      .eq("id", session.id),
-    performedIds.length > 0 &&
-      supabase
-        .from("session_exercises")
-        .update({ status: "completed" })
-        .in("id", performedIds),
-    unperformedIds.length > 0 &&
-      supabase
-        .from("session_exercises")
-        .update({ status: "skipped" })
-        .in("id", unperformedIds),
-  ]);
-  if (error) return failure("The workout could not be finished. Try again.");
-
-  revalidatePath("/");
-  redirect(`/sessions/${session.id}/summary`);
+  revalidatePath("/", "layout");
+  redirect("/");
 }
 
 function validSessionInput(...values: string[]) {

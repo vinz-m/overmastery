@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { SessionDayRefresh } from "@/features/sessions/session-day-refresh";
 import styles from "./primary-nav.module.css";
+import { navTab } from "@/features/navigation/page-transition";
 
 const destinations = [
   { id: "home", href: "/", icon: HouseIcon, label: "Today" },
@@ -35,6 +36,7 @@ export function PrimaryNav({ dayEndsAt }: { dayEndsAt: string }) {
           <Link
           key={item.id}
           href={item.href}
+          transitionTypes={navTab}
           aria-current={isActive ? "page" : undefined}
             className={isActive ? styles.activeNav : undefined}
           >

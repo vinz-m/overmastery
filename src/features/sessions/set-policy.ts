@@ -128,12 +128,6 @@ export function removalActionLabel({ isPlanned }: { isPlanned: boolean }) {
   return isPlanned ? "Skip planned set" : "Remove extra set";
 }
 
-export function exerciseStatusAfterSetChange(statuses: SetStatus[]) {
-  const hasCompletedSet = statuses.includes("completed");
-  const hasOpenSet = statuses.includes("planned");
-  return hasCompletedSet && !hasOpenSet ? "completed" : "planned";
-}
-
 function countStatus(slots: SetSlot[], status: SetStatus) {
   return slots.filter((slot) => slot.status === status).length;
 }

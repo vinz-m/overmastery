@@ -165,6 +165,7 @@ export type Database = {
           created_at: string
           distance_meters: number | null
           duration_seconds: number | null
+          entered_unit: Database["public"]["Enums"]["unit_system"] | null
           id: string
           kind: Database["public"]["Enums"]["set_kind"]
           planned_reps: number | null
@@ -182,6 +183,7 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           duration_seconds?: number | null
+          entered_unit?: Database["public"]["Enums"]["unit_system"] | null
           id?: string
           kind?: Database["public"]["Enums"]["set_kind"]
           planned_reps?: number | null
@@ -199,6 +201,7 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           duration_seconds?: number | null
+          entered_unit?: Database["public"]["Enums"]["unit_system"] | null
           id?: string
           kind?: Database["public"]["Enums"]["set_kind"]
           planned_reps?: number | null
@@ -358,6 +361,7 @@ export type Database = {
       session_exercises: {
         Row: {
           created_at: string
+          default_rest_seconds: number | null
           exercise_id: string | null
           exercise_name: string
           id: string
@@ -366,12 +370,16 @@ export type Database = {
           position: number
           source_template_exercise_id: string | null
           status: Database["public"]["Enums"]["session_exercise_status"]
+          target_rep_max: number | null
+          target_rep_min: number | null
+          target_sets: number | null
           tracking_type: Database["public"]["Enums"]["exercise_tracking_type"]
           training_session_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          default_rest_seconds?: number | null
           exercise_id?: string | null
           exercise_name: string
           id?: string
@@ -380,12 +388,16 @@ export type Database = {
           position: number
           source_template_exercise_id?: string | null
           status?: Database["public"]["Enums"]["session_exercise_status"]
+          target_rep_max?: number | null
+          target_rep_min?: number | null
+          target_sets?: number | null
           tracking_type: Database["public"]["Enums"]["exercise_tracking_type"]
           training_session_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          default_rest_seconds?: number | null
           exercise_id?: string | null
           exercise_name?: string
           id?: string
@@ -394,6 +406,9 @@ export type Database = {
           position?: number
           source_template_exercise_id?: string | null
           status?: Database["public"]["Enums"]["session_exercise_status"]
+          target_rep_max?: number | null
+          target_rep_min?: number | null
+          target_sets?: number | null
           tracking_type?: Database["public"]["Enums"]["exercise_tracking_type"]
           training_session_id?: string
           updated_at?: string
@@ -601,6 +616,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finish_session: {
+        Args: {
+          p_session_id: string
+        }
+        Returns: string
+      }
       latest_exercise_performances: {
         Args: {
           p_ended_before?: string
@@ -611,6 +632,7 @@ export type Database = {
         Returns: {
           exercise_id: string
           load_kg: number | null
+          load_unit: Database["public"]["Enums"]["unit_system"] | null
           reps: number[]
         }[]
       }

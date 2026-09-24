@@ -78,13 +78,38 @@ button, input, select, textarea { font: inherit; }
 button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 ::selection { background: var(--selection-background); color: var(--selection-foreground); }
-@media (hover: hover) {
-  :where(a, button, summary) {
-    transition-duration: var(--motion-feedback-duration);
-    transition-property: background-color, border-color, box-shadow, color;
-    transition-timing-function: var(--motion-feedback-ease);
-  }
+/* Press feedback, iOS-style: controls settle in quickly under the finger and
+   spring back on release. :where() keeps specificity at zero so any component
+   can still override it. Bare inline text links are left alone. */
+:where(button, summary, [role="button"], a[class]):not(:disabled) {
+  transition-duration: 260ms;
+  transition-property: transform, opacity, background-color, border-color, box-shadow, color;
+  transition-timing-function: var(--motion-feedback-ease);
 }
+:where(button, summary, [role="button"], a[class]):not(:disabled):active {
+  opacity: .85;
+  transform: scale(.97);
+  transition-duration: 80ms;
+}
+/* Page transitions (see features/navigation/page-transition.tsx).
+   Tabs crossfade: same place, different content. Forward/back slide a short
+   distance so direction reads without the eye chasing the page. */
+::view-transition { pointer-events: none; }
+::view-transition-old(.nav-tab) { animation: 120ms ease-in both page-fade reverse; }
+::view-transition-new(.nav-tab) { animation: 200ms ease-out 60ms both page-fade; }
+::view-transition-old(.nav-forward) { --page-offset: -48px; animation: 140ms ease-in both page-fade reverse, 300ms var(--motion-feedback-ease) both page-slide reverse; }
+::view-transition-new(.nav-forward) { --page-offset: 48px; animation: 200ms ease-out 100ms both page-fade, 300ms var(--motion-feedback-ease) both page-slide; }
+::view-transition-old(.nav-back) { --page-offset: 48px; animation: 140ms ease-in both page-fade reverse, 300ms var(--motion-feedback-ease) both page-slide reverse; }
+::view-transition-new(.nav-back) { --page-offset: -48px; animation: 200ms ease-out 100ms both page-fade, 300ms var(--motion-feedback-ease) both page-slide; }
+::view-transition-new(.page-reveal) { animation: 220ms ease-out both page-fade; }
+::view-transition-old(.page-reveal-out) { animation: 120ms ease-in both page-fade reverse; }
+@keyframes page-fade { from { opacity: 0; } }
+@keyframes page-slide { from { translate: var(--page-offset) 0; } }
+
 @media (prefers-reduced-motion: reduce) {
+  /* Keep the crossfade, drop the sideways movement. */
+  ::view-transition-old(*), ::view-transition-new(*) { --page-offset: 0px; }
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+  /* Keep the pressed state visible without movement. */
+  :where(button, summary, [role="button"], a[class]):not(:disabled):active { transform: none; opacity: .7; }
 }

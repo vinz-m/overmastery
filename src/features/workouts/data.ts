@@ -6,7 +6,6 @@ import type { Database } from "@/lib/supabase/database.types";
 
 import type { HomeActiveSession, HomeWorkout } from "./home";
 import type { WorkoutTemplateDraft } from "./types";
-import { latestTrainingDate } from "./workout-overview";
 
 type Client = SupabaseClient<Database>;
 
@@ -128,7 +127,11 @@ export async function getArchivedCustomExercises(
   }));
 }
 
+// The week strip looks back at most two weeks; a day of margin covers any time zone.
+const recentTrainingWindowMs = 15 * 24 * 60 * 60 * 1000;
+
 export async function getWorkoutOverview(supabase: Client) {
+  const recentSince = new Date(Date.now() - recentTrainingWindowMs).toISOString();
   const [{ data, error }, { data: activeData, error: activeError }, { data: historyData, error: historyError }] =
     await Promise.all([
       supabase
@@ -142,10 +145,15 @@ export async function getWorkoutOverview(supabase: Client) {
             target_rep_max,
             target_rep_min,
             target_sets,
-            exercises ( name )
-          )
+            exercises ( id, name, tracking_type )
+          ),
+          training_sessions ( ended_at )
         `)
         .is("archived_at", null)
+        // Only each plan's most recent completed session, not its whole history.
+        .eq("training_sessions.status", "completed")
+        .order("ended_at", { ascending: false, referencedTable: "training_sessions" })
+        .limit(1, { referencedTable: "training_sessions" })
         .order("created_at"),
       supabase
         .from("training_sessions")
@@ -154,9 +162,9 @@ export async function getWorkoutOverview(supabase: Client) {
         .maybeSingle(),
       supabase
         .from("training_sessions")
-        .select("ended_at, source_workout_template_id")
+        .select("ended_at")
         .eq("status", "completed")
-        .order("ended_at", { ascending: false }),
+        .gte("ended_at", recentSince),
     ]);
 
   if (error || activeError || historyError) {
@@ -176,9 +184,7 @@ export async function getWorkoutOverview(supabase: Client) {
       (left, right) => left.position - right.position,
     );
     const firstExercise = exercises[0];
-    const lastSession = historyData?.find(
-      (session) => session.source_workout_template_id === workout.id,
-    );
+    const lastSession = workout.training_sessions[0];
 
     return {
       exerciseCount: exercises.length,
@@ -187,6 +193,13 @@ export async function getWorkoutOverview(supabase: Client) {
         ? `${firstExercise.exercises.name} · ${firstExercise.target_sets} × ${formatRepTarget(firstExercise.target_rep_min, firstExercise.target_rep_max)}`
         : undefined,
       lastTrainedAt: lastSession?.ended_at ?? undefined,
+      exercises: exercises
+        .filter((item) => item.exercises)
+        .map((item) => ({
+          exerciseId: item.exercises!.id,
+          name: item.exercises!.name,
+          trackingType: item.exercises!.tracking_type,
+        })),
       name: workout.name,
       preview: exercises
         .map((item) => item.exercises?.name)
@@ -197,9 +210,9 @@ export async function getWorkoutOverview(supabase: Client) {
 
   return {
     activeSession,
-    lastTrainedAt: latestTrainingDate(
-      (historyData ?? []).map((session) => session.ended_at),
-    ),
+    trainedAt: (historyData ?? [])
+      .map((session) => session.ended_at)
+      .filter((endedAt): endedAt is string => Boolean(endedAt)),
     workouts,
   };
 }

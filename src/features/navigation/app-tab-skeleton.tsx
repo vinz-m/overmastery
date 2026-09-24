@@ -17,3 +17,14 @@ export function AppTabSkeleton() {
     </main>
   );
 }
+
+/** Skeleton for full-screen detail pages that sit outside the tab shell. */
+export function DetailSkeleton() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.shell}>
+        <AppTabSkeleton />
+      </div>
+    </div>
+  );
+}

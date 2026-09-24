@@ -3,6 +3,10 @@
 const CACHE_PREFIX = "overmastery-";
 const STATIC_CACHE = `${CACHE_PREFIX}static-v2`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v1`;
+// Each deploy adds new hashed /_next/static files; keep only the most recent
+// ones so the cache doesn't grow forever. Old entries are only ever needed by
+// a page that was open before the deploy.
+const RUNTIME_CACHE_LIMIT = 150;
 
 const PRECACHE_URLS = [
   "/offline.html",
@@ -31,8 +35,24 @@ function isSafeToCache(response) {
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
+  event.waitUntil(
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      // Take over right away instead of waiting for every open window of the
+      // installed app to close, which can take days on a phone. Safe because
+      // pages never depend on a specific worker version: navigations always go
+      // to the network and static files are content-hashed.
+      .then(() => self.skipWaiting()),
+  );
 });
+
+async function trimCache(cacheName, limit) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  // Keys come back in insertion order, so the oldest are first.
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)));
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -53,6 +73,7 @@ self.addEventListener("activate", (event) => {
         ),
       self.registration.navigationPreload?.enable(),
       self.clients.claim(),
+      trimCache(RUNTIME_CACHE, RUNTIME_CACHE_LIMIT),
     ]),
   );
 });
@@ -97,6 +118,7 @@ self.addEventListener("fetch", (event) => {
       if (isSafeToCache(networkResponse)) {
         const cache = await caches.open(RUNTIME_CACHE);
         await cache.put(request, networkResponse.clone());
+        event.waitUntil(trimCache(RUNTIME_CACHE, RUNTIME_CACHE_LIMIT));
       }
 
       return networkResponse;

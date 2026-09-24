@@ -22,8 +22,8 @@ export default function Error({
   return (
     <RouteState
       status="Couldn’t load this page"
-      title="That set didn’t complete."
-      description="The page stopped before your training data could load. Try it again, or return to Today and reopen what you need."
+      title="This page didn’t load."
+      description="Something went wrong while loading your training data. Try again, or return to Today."
       actions={
         <>
           <button type="button" onClick={retry}>Try again</button>

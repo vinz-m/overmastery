@@ -4,6 +4,7 @@ import { SessionSummary } from "@/features/sessions/session-summary";
 import { getSessionWorkspace } from "@/features/sessions/data";
 import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { PageTransition } from "@/features/navigation/page-transition";
 
 export default async function SessionSummaryPage({
   params,
@@ -19,5 +20,5 @@ export default async function SessionSummaryPage({
   if (workspace.status === "active") redirect(`/sessions/${sessionId}`);
   if (workspace.status !== "completed") redirect("/");
 
-  return <SessionSummary session={workspace.session} unitSystem={user.unitSystem} />;
+  return <PageTransition><SessionSummary session={workspace.session} unitSystem={user.unitSystem} /></PageTransition>;
 }

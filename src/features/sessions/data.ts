@@ -36,14 +36,13 @@ export async function getSessionWorkspace(
         position,
         status,
         tracking_type,
-        workout_template_exercises (
-          default_rest_seconds,
-          target_rep_max,
-          target_rep_min,
-          target_sets
-        ),
+        default_rest_seconds,
+        target_rep_max,
+        target_rep_min,
+        target_sets,
         exercise_sets (
           assistance_kg,
+          entered_unit,
           id,
           planned_reps,
           position,
@@ -62,16 +61,17 @@ export async function getSessionWorkspace(
   const exerciseIds = data.session_exercises
     .map((exercise) => exercise.exercise_id)
     .filter((id): id is string => Boolean(id));
-  const previous = await getPreviousPerformances(
-    supabase,
-    data.id,
-    data.source_workout_template_id,
-    exerciseIds,
-  );
+  const previous = await getLatestPerformances(supabase, exerciseIds, {
+    excludeSessionId: data.id,
+    workoutTemplateId: data.source_workout_template_id,
+  });
 
   const exercises: ActiveExercise[] = data.session_exercises
     .map((exercise) => {
-      const source = exercise.workout_template_exercises;
+      // Targets are snapshotted when the session starts, so plan edits
+      // never change a session. Older sessions without a snapshot fall back
+      // to their stored planned sets.
+      const source = exercise.target_sets === null ? null : exercise;
       const trackingType = exercise.tracking_type;
       const storedPlannedSetCount = exercise.exercise_sets.filter(
         (set) => set.planned_reps !== null,
@@ -94,6 +94,7 @@ export async function getSessionWorkspace(
         },
         sets: exercise.exercise_sets
           .map((set) => ({
+            enteredUnit: set.entered_unit,
             id: set.id,
             isPlanned: source
               ? set.position < targetSets
@@ -126,11 +127,7 @@ export async function getSessionWorkspace(
     templateName: data.template_name ?? "Workout",
   };
 
-  const catalog: SwapExerciseOption[] = (await catalogPromise).map((exercise) => ({
-    id: exercise.id,
-    name: exercise.name,
-    trackingType: exercise.trackingType,
-  }));
+  const catalog: SwapExerciseOption[] = await catalogPromise;
 
   return { catalog, session, status: data.status };
 }
@@ -138,23 +135,22 @@ export async function getSessionWorkspace(
 // Prefers the last time this exercise was done in the same workout, since the
 // same exercise is often trained differently across workouts. Falls back to
 // the latest session of that exercise from any workout.
-async function getPreviousPerformances(
+export async function getLatestPerformances(
   supabase: Client,
-  currentSessionId: string,
-  workoutTemplateId: string | null,
   exerciseIds: string[],
+  { excludeSessionId, workoutTemplateId }: { excludeSessionId?: string; workoutTemplateId: string | null },
 ) {
   const performances = new Map<string, PreviousPerformance>();
   if (exerciseIds.length === 0) return performances;
 
   const [{ data: anyWorkout }, { data: sameWorkout }] = await Promise.all([
     supabase.rpc("latest_exercise_performances", {
-      p_exclude_session_id: currentSessionId,
+      p_exclude_session_id: excludeSessionId,
       p_exercise_ids: exerciseIds,
     }),
     workoutTemplateId
       ? supabase.rpc("latest_exercise_performances", {
-          p_exclude_session_id: currentSessionId,
+          p_exclude_session_id: excludeSessionId,
           p_exercise_ids: exerciseIds,
           p_workout_template_id: workoutTemplateId,
         })
@@ -162,7 +158,7 @@ async function getPreviousPerformances(
   ]);
 
   for (const row of [...(anyWorkout ?? []), ...(sameWorkout ?? [])]) {
-    performances.set(row.exercise_id, { loadKg: row.load_kg, reps: row.reps });
+    performances.set(row.exercise_id, { loadKg: row.load_kg, reps: row.reps, unit: row.load_unit });
   }
 
   return performances;

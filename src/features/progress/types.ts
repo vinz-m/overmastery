@@ -1,5 +1,6 @@
 import type { PerformanceComparison } from "@/features/sessions/performance";
 import type { TrackingType } from "@/features/sessions/types";
+import type { UnitSystem } from "@/lib/units";
 
 export type HistoryExercise = {
   comparison: PerformanceComparison;
@@ -14,6 +15,8 @@ export type HistoryExercise = {
   reps: number[];
   skippedSets: number;
   trackingType: TrackingType;
+  /** Unit the load was entered in; null means the profile default. */
+  unit: UnitSystem | null;
 };
 
 export type HistorySession = {

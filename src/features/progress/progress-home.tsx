@@ -8,6 +8,7 @@ import { formatPerformance, formatSessionDate } from "./format";
 import styles from "./progress.module.css";
 import type { ExerciseTimeline, HistorySession } from "./types";
 import type { UnitSystem } from "@/lib/units";
+import { navForward, navTab } from "@/features/navigation/page-transition";
 
 export function ProgressHome({
   exercises,
@@ -46,7 +47,7 @@ export function ProgressHome({
           <section className={styles.emptyState}>
             <span>No completed sessions yet</span>
             <h2>Finish your first session to start your story.</h2>
-            <Link href="/workouts">Choose a workout <ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></Link>
+            <Link href="/workouts" transitionTypes={navTab}>Choose a workout <ArrowRightIcon aria-hidden="true" size={18} weight="bold" /></Link>
           </section>
         ) : (
           <>
@@ -75,7 +76,7 @@ export function ProgressHome({
               </header>
               <div className={styles.sessionList}>
                 {sessions.slice(0, 12).map((session) => (
-                  <Link href={`/progress/sessions/${session.id}`} key={session.id}>
+                  <Link href={`/progress/sessions/${session.id}`} key={session.id} transitionTypes={navForward}>
                     <time dateTime={session.endedAt}>
                       <b>{new Date(session.endedAt).getDate()}</b>
                       <small>{new Intl.DateTimeFormat("en", { month: "short" }).format(new Date(session.endedAt))}</small>
@@ -104,12 +105,12 @@ export function ProgressHome({
                 {exercises.map((exercise) => {
                   const latestExposure = exercise.exposures[0];
                   return (
-                    <Link href={`/progress/exercises/${exercise.exerciseId}`} key={exercise.exerciseId}>
+                    <Link href={`/progress/exercises/${exercise.exerciseId}`} key={exercise.exerciseId} transitionTypes={navForward}>
                       <div>
                         <strong>{exercise.name}</strong>
                         <small>{formatSessionDate(latestExposure.endedAt)} · {exercise.exposures.length} {exercise.exposures.length === 1 ? "exposure" : "exposures"}</small>
                       </div>
-                      <span>{formatPerformance(exercise.trackingType, latestExposure.loadKg, latestExposure.reps, unitSystem)}</span>
+                      <span>{formatPerformance(exercise.trackingType, latestExposure.loadKg, latestExposure.reps, latestExposure.unit ?? unitSystem)}</span>
                     </Link>
                   );
                 })}

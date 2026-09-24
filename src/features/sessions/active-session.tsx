@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   ArrowLeftIcon,
   CaretDownIcon,
@@ -9,8 +9,11 @@ import {
   CheckIcon,
   CircleIcon,
   DotsThreeIcon,
+  MagnifyingGlassIcon,
   MinusIcon,
+  PlusIcon,
 } from "@phosphor-icons/react";
+import { AnimatePresence, motion, useDragControls } from "motion/react";
 
 import {
   addExtraSet,
@@ -23,23 +26,37 @@ import {
   skipExercise,
   swapExercise,
 } from "./actions";
-import { formatDisplayLoad, loadUnit, toDisplayLoad, toKilograms, type UnitSystem } from "@/lib/units";
+import { convertLoadInput, formatDisplayLoad, loadStep, loadUnit, toDisplayLoad, toKilograms, type UnitSystem } from "@/lib/units";
 import { scrollToPageTop } from "@/lib/motion";
-import { SelectField } from "@/features/ui/select-field";
+import { filterExercises, groupExercises } from "@/features/exercises/exercise-filter";
+import { useDismissibleDetails } from "@/features/ui/use-dismissible-details";
 import { canAddExtraSet, planOutcomeLabel, projectSetPlan, removalActionLabel } from "./set-policy";
 import { prefillForSet } from "./set-prefill";
+import { DiscardWorkoutButton } from "./discard-workout-button";
+import { applyPendingSets, useOfflineSetQueue } from "./offline-set-queue";
 import styles from "./active-session.module.css";
 import type { ActiveExercise, ActiveSession, SessionMutationResult, SwapExerciseOption } from "./types";
+import { navBack } from "@/features/navigation/page-transition";
 
 type Mutate = (action: () => Promise<SessionMutationResult>, afterSuccess?: () => void) => void;
+type LogSetInput = Parameters<typeof completeSet>[0];
+type LogSet = (input: LogSetInput) => void;
 
-export function ActiveSessionScreen({ catalog, session, unitSystem }: { dayEndsAt: string; catalog: SwapExerciseOption[]; session: ActiveSession; unitSystem: UnitSystem }) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const [currentExerciseId, setCurrentExerciseId] = useState(session.exercises.find((exercise) => exercise.status !== "skipped")?.id ?? session.exercises[0]?.id);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [elapsedMinutes, setElapsedMinutes] = useState(() => minutesSince(session.startedAt));
+const offlineMessage = "You’re offline. This change needs a connection, so try again once you’re back online.";
+
+export function ActiveSessionScreen({ catalog, session: serverSession, unitSystem }: { catalog: SwapExerciseOption[]; session: ActiveSession; unitSystem: UnitSystem }) {
   const [message, setMessage] = useState<string | null>(null);
+  const showRejected = useCallback((text: string) => setMessage(text), []);
+  const queue = useOfflineSetQueue(serverSession.id, showRejected);
+  const session = applyPendingSets(serverSession, queue.pending);
+  const waitingToSync = Object.keys(queue.pending).length;
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const [currentExerciseId, setCurrentExerciseId] = useState(session.exercises.find((exercise) => exercise.status !== "skipped")?.id ?? session.exercises[0]?.id);
+  const [sheet, setSheet] = useState<"exercises" | "replace" | null>(null);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const sheetOpen = sheet !== null;
+  const [elapsedMinutes, setElapsedMinutes] = useState(() => minutesSince(session.startedAt));
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -47,9 +64,13 @@ export function ActiveSessionScreen({ catalog, session, unitSystem }: { dayEndsA
     return () => window.clearInterval(timer);
   }, [session.startedAt]);
 
+  const openSheet = (next: "exercises" | "replace") => {
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    setSheet(next);
+  };
   const closeSheet = () => {
-    setSheetOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+    setSheet(null);
+    window.requestAnimationFrame(() => returnFocusRef.current?.focus());
   };
 
   useEffect(() => {
@@ -65,118 +86,207 @@ export function ActiveSessionScreen({ catalog, session, unitSystem }: { dayEndsA
   const mutate: Mutate = (action, afterSuccess) => {
     startTransition(async () => {
       setMessage(null);
-      const result = await action();
+      let result: SessionMutationResult;
+      try {
+        result = await action();
+      } catch {
+        // A thrown action means the request never completed (usually no signal).
+        setMessage(offlineMessage);
+        return;
+      }
       if (!result.ok) { setMessage(result.message ?? "That change could not be saved. Try again."); return; }
       // The action re-renders this route in its own response; no refresh needed.
       afterSuccess?.();
     });
   };
+  const logSet: LogSet = (input) => {
+    startTransition(async () => {
+      setMessage(null);
+      let result: SessionMutationResult;
+      try {
+        result = await completeSet(input);
+      } catch {
+        queue.enqueue(input);
+        return;
+      }
+      if (!result.ok) setMessage(result.message ?? "The set could not be saved. Try again.");
+    });
+  };
+  // A set that hasn't synced yet is simply un-logged on the device.
+  const reopen = (setId: string) => {
+    if (queue.pending[setId]) queue.discard(setId);
+    else mutate(() => reopenSet({ sessionId: session.id, setId }));
+  };
 
   if (!currentExercise) return null;
   const currentIndex = session.exercises.findIndex((exercise) => exercise.id === currentExercise.id);
   const nextExercise = [...session.exercises.slice(currentIndex + 1), ...session.exercises.slice(0, currentIndex)].find((exercise) => exercise.status !== "skipped");
-  const jumpTo = (exerciseId: string) => { setCurrentExerciseId(exerciseId); setSheetOpen(false); scrollToPageTop(); window.requestAnimationFrame(() => triggerRef.current?.focus()); };
-  const moveAfterSkip = () => { if (nextExercise) setCurrentExerciseId(nextExercise.id); };
+  const showExercise = (exerciseId: string) => {
+    const target = session.exercises.find((exercise) => exercise.id === exerciseId);
+    if (target) setDirection(target.position >= currentExercise.position ? 1 : -1);
+    setCurrentExerciseId(exerciseId);
+  };
+  const jumpTo = (exerciseId: string) => { showExercise(exerciseId); closeSheet(); scrollToPageTop(); };
+  const moveAfterSkip = () => { if (nextExercise) showExercise(nextExercise.id); };
 
   return <main className={styles.page}><section className={styles.shell}>
     <header className={styles.stickyHeader} inert={sheetOpen ? true : undefined}>
-      <Link aria-label="Leave active workout" href="/"><ArrowLeftIcon aria-hidden="true" size={22} weight="bold" /></Link>
+      <Link aria-label="Leave active workout" href="/" transitionTypes={navBack}><ArrowLeftIcon aria-hidden="true" size={22} weight="bold" /></Link>
       <div><strong>{session.templateName}</strong><span>{elapsedMinutes} min</span></div>
-      <button disabled={pending || completedSets === 0} onClick={() => mutate(() => finishSession(session.id))} type="button">Finish</button>
+      <button disabled={pending || completedSets === 0 || waitingToSync > 0} onClick={() => mutate(() => finishSession(session.id))} type="button">Finish</button>
     </header>
     {message && <div className={styles.errorBanner} role="alert">{message}</div>}
+    {waitingToSync > 0 && <div className={styles.syncBanner} role="status">{waitingToSync} {waitingToSync === 1 ? "set is" : "sets are"} saved on this phone and will sync when you’re back online. Finish once they’ve synced.</div>}
     <div className={styles.content} inert={sheetOpen ? true : undefined}>
-      <button className={styles.exercisePicker} onClick={() => setSheetOpen(true)} ref={triggerRef} type="button">
-        <span>Exercise {currentExercise.position + 1} of {session.exercises.length}</span><strong>{currentExercise.name}</strong><small>{trackingLabel(currentExercise.trackingType)}</small><i aria-hidden="true"><CaretDownIcon size={22} weight="bold" /></i>
-      </button>
-      <ExerciseOptions catalog={catalog} exercise={currentExercise} moveAfterSkip={moveAfterSkip} mutate={mutate} pending={pending} session={session} />
-      <FocusedSet exercise={currentExercise} mutate={mutate} pending={pending} sessionId={session.id} unitSystem={unitSystem} />
-      <SetProgress exercise={currentExercise} mutate={mutate} pending={pending} sessionId={session.id} />
-      {nextExercise && nextExercise.id !== currentExercise.id && <button className={styles.upNext} onClick={() => jumpTo(nextExercise.id)} type="button"><span>Up next</span><strong>{nextExercise.name}</strong><i aria-hidden="true"><CaretRightIcon size={24} weight="bold" /></i></button>}
+      <div className={styles.exerciseHeader}>
+        <span className={styles.exerciseCount}>Exercise {currentExercise.position + 1} of {session.exercises.length}</span>
+        <ExerciseOptions completedSets={completedSets} exercise={currentExercise} moveAfterSkip={moveAfterSkip} mutate={mutate} onReplace={() => openSheet("replace")} pending={pending} sessionId={session.id} />
+      </div>
+      <AnimatePresence custom={direction} initial={false} mode="wait">
+        <motion.div animate="shown" custom={direction} exit="leaving" initial="entering" key={currentExercise.id} transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }} variants={exerciseSlide}>
+          <button aria-haspopup="dialog" className={styles.exercisePicker} onClick={() => openSheet("exercises")} type="button">
+            <span><strong>{currentExercise.name}</strong><small>{trackingLabel(currentExercise.trackingType)}</small></span>
+            <CaretDownIcon aria-hidden="true" size={20} weight="bold" />
+          </button>
+          <FocusedSet exercise={currentExercise} logSet={logSet} pending={pending} sessionId={session.id} unitSystem={unitSystem} />
+          <SetProgress exercise={currentExercise} mutate={mutate} onReopen={reopen} pending={pending} sessionId={session.id} />
+        </motion.div>
+      </AnimatePresence>
+      {nextExercise && nextExercise.id !== currentExercise.id && <button className={styles.upNext} onClick={() => { showExercise(nextExercise.id); scrollToPageTop(); }} type="button"><span>Up next</span><strong>{nextExercise.name}</strong><i aria-hidden="true"><CaretRightIcon size={24} weight="bold" /></i></button>}
     </div>
-    {sheetOpen && <ExerciseSheet closeRef={closeRef} currentExerciseId={currentExercise.id} exercises={session.exercises} onClose={closeSheet} onJump={jumpTo} />}
+    {sheet === "exercises" && <BottomSheet closeLabel="Done" closeRef={closeRef} onClose={closeSheet} title="Exercises"><ExerciseList currentExerciseId={currentExercise.id} exercises={session.exercises} onJump={jumpTo} /></BottomSheet>}
+    {sheet === "replace" && <BottomSheet closeLabel="Cancel" closeRef={closeRef} fixedHeight onClose={closeSheet} title={`Replace ${currentExercise.name}`}><ReplacementList catalog={catalog} exercise={currentExercise} onPick={(replacementExerciseId) => { closeSheet(); mutate(() => swapExercise({ replacementExerciseId, sessionExerciseId: currentExercise.id, sessionId: session.id })); }} session={session} /></BottomSheet>}
   </section></main>;
 }
 
-function ExerciseOptions({ catalog, exercise, moveAfterSkip, mutate, pending, session }: { catalog: SwapExerciseOption[]; exercise: ActiveExercise; moveAfterSkip: () => void; mutate: Mutate; pending: boolean; session: ActiveSession }) {
-  const [replacementId, setReplacementId] = useState("");
+// Next exercise slides in from the right, previous from the left.
+const exerciseSlide = {
+  entering: (direction: 1 | -1) => ({ opacity: 0, x: 28 * direction }),
+  leaving: (direction: 1 | -1) => ({ opacity: 0, x: -28 * direction, transition: { duration: 0.12 } }),
+  shown: { opacity: 1, x: 0 },
+};
+
+function ExerciseOptions({ completedSets, exercise, moveAfterSkip, mutate, onReplace, pending, sessionId }: { completedSets: number; exercise: ActiveExercise; moveAfterSkip: () => void; mutate: Mutate; onReplace: () => void; pending: boolean; sessionId: string }) {
   const canChange = !exercise.sets.some((set) => set.status === "completed");
-  const options = catalog.filter((option) => option.id !== exercise.exerciseId && !session.exercises.some((item) => item.exerciseId === option.id));
-  return <details className={styles.exerciseMenu}><summary aria-label={`Options for ${exercise.name}`}><DotsThreeIcon aria-hidden="true" size={22} weight="bold" /></summary><div>
-    <strong>Change today only</strong><p>Your saved workout remains unchanged.</p>
-    <SelectField
-      ariaLabel="Replacement exercise"
-      disabled={!canChange || pending}
-      onValueChange={setReplacementId}
-      options={[{ label: "Choose replacement", value: "" }, ...options.map((option) => ({ label: option.name, value: option.id }))]}
-      value={replacementId}
-    />
-    <button className={styles.menuAction} disabled={!canChange || pending || !replacementId} onClick={() => mutate(() => swapExercise({ replacementExerciseId: replacementId, sessionExerciseId: exercise.id, sessionId: session.id }))} type="button">Swap exercise</button>
-    <button className={styles.skipButton} disabled={!canChange || pending} onClick={() => mutate(() => skipExercise({ sessionExerciseId: exercise.id, sessionId: session.id }), moveAfterSkip)} type="button">Skip exercise</button>
+  const menuRef = useDismissibleDetails();
+  const closeMenu = () => { if (menuRef.current) menuRef.current.open = false; };
+  return <details className={styles.exerciseMenu} ref={menuRef}><summary aria-label={`Options for ${exercise.name}`}><DotsThreeIcon aria-hidden="true" size={22} weight="bold" /></summary><div>
+    <strong>This exercise</strong><p>Changes apply to today only. Your saved workout stays the same.</p>
+    <button className={styles.menuAction} disabled={!canChange || pending} onClick={() => { closeMenu(); onReplace(); }} type="button">Replace exercise</button>
+    <button className={styles.skipButton} disabled={!canChange || pending} onClick={() => { closeMenu(); mutate(() => skipExercise({ sessionExerciseId: exercise.id, sessionId }), moveAfterSkip); }} type="button">Skip exercise</button>
     {!canChange && <small>Reopen logged sets before changing this exercise.</small>}
+    <hr />
+    <strong>This workout</strong><p>Stop now without saving it to your history.</p>
+    <DiscardWorkoutButton className={styles.discardAction} completedSets={completedSets} disabled={pending} sessionId={sessionId} />
   </div></details>;
 }
 
-function FocusedSet({ exercise, mutate, pending, sessionId, unitSystem }: { exercise: ActiveExercise; mutate: Mutate; pending: boolean; sessionId: string; unitSystem: UnitSystem }) {
+function FocusedSet({ exercise, logSet, pending, sessionId, unitSystem }: { exercise: ActiveExercise; logSet: LogSet; pending: boolean; sessionId: string; unitSystem: UnitSystem }) {
   const activeSet = exercise.sets.find((set) => set.status === "planned");
   const completedCount = exercise.sets.filter((set) => set.status === "completed").length;
   const plan = projectSetPlan(exercise.sets, exercise.targetSets);
   if (exercise.status === "skipped") return <div className={styles.statusCard}><span>Skipped today</span><p>Choose another exercise to continue training.</p></div>;
   if (!activeSet) return <div className={styles.statusCard}><span>Exercise complete</span><strong>{planOutcomeLabel(plan)}</strong></div>;
-  return <ActiveSetEditor completedCount={completedCount} exercise={exercise} key={activeSet.id} mutate={mutate} pending={pending} sessionId={sessionId} set={activeSet} unitSystem={unitSystem} />;
+  return <ActiveSetEditor completedCount={completedCount} exercise={exercise} key={activeSet.id} logSet={logSet} pending={pending} sessionId={sessionId} set={activeSet} unitSystem={unitSystem} />;
 }
 
-function ActiveSetEditor({ completedCount, exercise, mutate, pending, sessionId, set, unitSystem }: { completedCount: number; exercise: ActiveExercise; mutate: Mutate; pending: boolean; sessionId: string; set: ActiveExercise["sets"][number]; unitSystem: UnitSystem }) {
+function ActiveSetEditor({ completedCount, exercise, logSet, pending, sessionId, set, unitSystem }: { completedCount: number; exercise: ActiveExercise; logSet: LogSet; pending: boolean; sessionId: string; set: ActiveExercise["sets"][number]; unitSystem: UnitSystem }) {
   const prefill = prefillForSet(set, exercise.sets, exercise.previous);
-  const [load, setLoad] = useState(prefill.loadKg === null ? "" : String(toDisplayLoad(prefill.loadKg, unitSystem)));
+  // Machines are labelled in kg or lb, so each set can be entered in either.
+  const [unit, setUnit] = useState<UnitSystem>(prefill.unit ?? unitSystem);
+  const [load, setLoad] = useState(prefill.loadKg === null ? "" : String(toDisplayLoad(prefill.loadKg, prefill.unit ?? unitSystem)));
+  const otherUnit: UnitSystem = unit === "imperial" ? "metric" : "imperial";
+  const switchUnit = () => {
+    if (load !== "" && Number.isFinite(Number(load))) setLoad(String(convertLoadInput(Number(load), unit, otherUnit)));
+    setUnit(otherUnit);
+  };
   const [reps, setReps] = useState(prefill.reps === null ? "" : String(prefill.reps));
   const loadRequired = exercise.trackingType !== "bodyweight_reps";
   const canComplete = reps !== "" && (!loadRequired || (load !== "" && Number(load) >= 0));
   return <section className={styles.activeSet}>
     <header><div><span>Current set</span><strong>{setName(set, exercise.targetSets)}</strong></div><small>{completedCount} completed</small></header>
-    <p className={styles.previousSet}>Previous: <strong>{previousSetLabel(exercise, set.position, unitSystem)}</strong></p>
+    <p className={styles.previousSet}>Previous: <strong>{previousSetLabel(exercise, set.position, exercise.previous.unit ?? unitSystem)}</strong></p>
     <div className={styles.setInputs}>
-      {loadRequired ? <label><span>{loadLabel(exercise.trackingType)}</span><div><input aria-label={loadLabel(exercise.trackingType)} inputMode="decimal" min="0" onChange={(event) => setLoad(event.target.value)} step={unitSystem === "imperial" ? "0.5" : "0.25"} type="number" value={load} /><small>{loadUnit(unitSystem)}</small></div></label> : <div className={styles.bodyweightField}><span>Load</span><strong>Bodyweight</strong></div>}
+      {loadRequired ? <label><span>{loadLabel(exercise.trackingType)}</span><div><input aria-label={`${loadLabel(exercise.trackingType)} in ${unit === "imperial" ? "pounds" : "kilograms"}`} inputMode="decimal" min="0" onChange={(event) => setLoad(event.target.value)} step={loadStep(unit)} type="number" value={load} /><button aria-label={`Switch to ${otherUnit === "imperial" ? "pounds" : "kilograms"}`} className={styles.unitToggle} onClick={switchUnit} type="button">{loadUnit(unit)}</button></div></label> : <div className={styles.bodyweightField}><span>Load</span><strong>Bodyweight</strong></div>}
       <label><span>Reps</span><input aria-label="Reps" inputMode="numeric" min="0" onChange={(event) => setReps(event.target.value)} placeholder="0" type="number" value={reps} /></label>
     </div>
-    <button className={styles.completeSet} disabled={pending || !canComplete} onClick={() => mutate(() => completeSet({ loadKg: loadRequired ? toKilograms(Number(load), unitSystem) : null, reps: Number(reps), sessionId, setId: set.id }))} type="button">Complete set</button>
+    <button className={styles.completeSet} disabled={pending || !canComplete} onClick={() => logSet({ loadKg: loadRequired ? toKilograms(Number(load), unit) : null, loadUnit: loadRequired ? unit : null, reps: Number(reps), sessionId, setId: set.id })} type="button">Complete set</button>
   </section>;
 }
 
-function SetProgress({ exercise, mutate, pending, sessionId }: { exercise: ActiveExercise; mutate: Mutate; pending: boolean; sessionId: string }) {
+function SetProgress({ exercise, mutate, onReopen, pending, sessionId }: { exercise: ActiveExercise; mutate: Mutate; onReopen: (setId: string) => void; pending: boolean; sessionId: string }) {
   const canAddExtra = canAddExtraSet(exercise.sets);
   const plan = projectSetPlan(exercise.sets, exercise.targetSets);
   const activeSet = exercise.sets.find((set) => set.status === "planned");
   return <section className={styles.progressSection}>
     <div className={styles.setProgress} aria-label={`${exercise.sets.filter((set) => set.status === "completed").length} sets completed`}>
       {exercise.sets.map((set) => set.status === "completed"
-        ? <button aria-label={`Edit ${setName(set, exercise.targetSets)}`} className={styles.progressDone} disabled={pending} key={set.id} onClick={() => mutate(() => reopenSet({ sessionId, setId: set.id }))} type="button"><CheckIcon aria-hidden="true" size={14} weight="bold" /></button>
+        ? <button aria-label={`Edit ${setName(set, exercise.targetSets)}`} className={styles.progressDone} disabled={pending} key={set.id} onClick={() => onReopen(set.id)} type="button"><CheckIcon aria-hidden="true" size={14} weight="bold" /></button>
         : set.status === "skipped"
           ? <button aria-label={`Restore ${setName(set, exercise.targetSets)}`} className={styles.progressSkipped} disabled={pending || !set.isPlanned} key={set.id} onClick={() => mutate(() => restoreSkippedSet({ sessionId, setId: set.id }))} type="button"><MinusIcon aria-hidden="true" size={14} weight="bold" /></button>
           : <span className={set.id === activeSet?.id ? styles.progressCurrent : ""} key={set.id}>{set.position + 1}</span>)}
       {plan.plannedSlots.filter((slot) => slot.synthetic).map((slot) => <button aria-label={`Restore planned set ${slot.position + 1}`} className={styles.progressSkipped} disabled={pending} key={`missing-${slot.position}`} onClick={() => mutate(() => restoreMissingPlannedSet({ position: slot.position, sessionExerciseId: exercise.id, sessionId }))} type="button"><MinusIcon aria-hidden="true" size={14} weight="bold" /></button>)}
     </div>
-    {exercise.status !== "skipped" && <details className={styles.setActions}><summary>Set options</summary><div>
-      <button disabled={pending || !canAddExtra} onClick={() => mutate(() => addExtraSet({ sessionExerciseId: exercise.id, sessionId }))} type="button">{canAddExtra ? "Add extra set" : "Complete the extra set first"}</button>
+    {exercise.status !== "skipped" && <div className={styles.setActions}>
+      <button disabled={pending || !canAddExtra} onClick={() => mutate(() => addExtraSet({ sessionExerciseId: exercise.id, sessionId }))} type="button"><PlusIcon aria-hidden="true" size={16} weight="bold" />Add set</button>
       {activeSet && <RemoveSetButton exercise={exercise} mutate={mutate} pending={pending} sessionId={sessionId} set={activeSet} />}
-    </div></details>}
+    </div>}
+    {exercise.status !== "skipped" && !canAddExtra && <small className={styles.setActionsHint}>Complete the extra set before adding another.</small>}
   </section>;
 }
 
 function RemoveSetButton({ exercise, mutate, pending, sessionId, set }: { exercise: ActiveExercise; mutate: Mutate; pending: boolean; sessionId: string; set: ActiveExercise["sets"][number] }) {
   const nonSkippedSets = exercise.sets.filter((item) => item.status !== "skipped").length;
-  return <button disabled={pending || nonSkippedSets <= 1} onClick={() => mutate(() => removeWorkingSet({ sessionId, setId: set.id }))} type="button">{removalActionLabel({ isPlanned: set.isPlanned })}</button>;
+  return <button className={styles.removeSet} disabled={pending || nonSkippedSets <= 1} onClick={() => mutate(() => removeWorkingSet({ sessionId, setId: set.id }))} type="button"><MinusIcon aria-hidden="true" size={16} weight="bold" />{removalActionLabel({ isPlanned: set.isPlanned })}</button>;
 }
 
-function ExerciseSheet({ closeRef, currentExerciseId, exercises, onClose, onJump }: { closeRef: React.RefObject<HTMLButtonElement | null>; currentExerciseId: string; exercises: ActiveExercise[]; onClose: () => void; onJump: (exerciseId: string) => void }) {
-  return <div className={styles.sheetLayer}><button aria-label="Close exercise list" className={styles.scrim} onClick={onClose} /><section aria-labelledby="exercise-sheet-title" aria-modal="true" className={styles.exerciseSheet} role="dialog">
-    <div aria-hidden="true" className={styles.sheetGrabber} /><header><h2 id="exercise-sheet-title">Exercises</h2><button onClick={onClose} ref={closeRef}>Done</button></header>
-    <div className={styles.sheetList}>{exercises.map((exercise) => {
-      const completed = exercise.sets.filter((set) => set.status === "completed").length;
-      const current = exercise.id === currentExerciseId;
-      return <button aria-current={current ? "true" : undefined} className={current ? styles.sheetCurrent : ""} key={exercise.id} onClick={() => onJump(exercise.id)} type="button"><span aria-hidden="true" className={styles.sheetStatus}>{exercise.status === "completed" ? <CheckIcon size={15} weight="bold" /> : exercise.status === "skipped" ? <MinusIcon size={15} weight="bold" /> : current ? <CircleIcon size={8} weight="fill" /> : null}</span><span><strong>{exercise.name}</strong>{current && <small>Current exercise</small>}</span><b>{exercise.status === "skipped" ? "Skipped" : `${completed}/${exercise.sets.length}`}</b></button>;
-    })}</div>
-  </section></div>;
+// Pulling down past this distance, or flicking faster than this, closes the sheet.
+const sheetCloseOffset = 96;
+const sheetCloseVelocity = 500;
+
+function BottomSheet({ children, closeLabel, closeRef, fixedHeight = false, onClose, title }: { children: React.ReactNode; closeLabel: string; closeRef: React.RefObject<HTMLButtonElement | null>; fixedHeight?: boolean; onClose: () => void; title: string }) {
+  const dragControls = useDragControls();
+
+  useEffect(() => {
+    // Keep swipes on the scrim from scrolling the workout underneath.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
+  const startDrag = (event: React.PointerEvent) => {
+    if ((event.target as HTMLElement).closest("button, input")) return;
+    dragControls.start(event);
+  };
+
+  return <div className={styles.sheetLayer}><button aria-label={`Close ${title}`} className={styles.scrim} onClick={onClose} /><motion.section aria-labelledby="sheet-title" aria-modal="true" className={fixedHeight ? `${styles.exerciseSheet} ${styles.sheetFixed}` : styles.exerciseSheet} drag="y" dragConstraints={{ bottom: 0, top: 0 }} dragControls={dragControls} dragElastic={{ bottom: 1, top: 0 }} dragListener={false} onDragEnd={(_, info) => { if (info.offset.y > sheetCloseOffset || info.velocity.y > sheetCloseVelocity) onClose(); }} role="dialog">
+    <div className={styles.sheetHandle} onPointerDown={startDrag}><div aria-hidden="true" className={styles.sheetGrabber} /><header><h2 id="sheet-title">{title}</h2><button onClick={onClose} ref={closeRef}>{closeLabel}</button></header></div>
+    {children}
+  </motion.section></div>;
+}
+
+function ExerciseList({ currentExerciseId, exercises, onJump }: { currentExerciseId: string; exercises: ActiveExercise[]; onJump: (exerciseId: string) => void }) {
+  return <div className={styles.sheetList}>{exercises.map((exercise) => {
+    const completed = exercise.sets.filter((set) => set.status === "completed").length;
+    const current = exercise.id === currentExerciseId;
+    return <button aria-current={current ? "true" : undefined} className={current ? styles.sheetCurrent : ""} key={exercise.id} onClick={() => onJump(exercise.id)} type="button"><span aria-hidden="true" className={styles.sheetStatus}>{exercise.status === "completed" ? <CheckIcon size={15} weight="bold" /> : exercise.status === "skipped" ? <MinusIcon size={15} weight="bold" /> : current ? <CircleIcon size={8} weight="fill" /> : null}</span><span><strong>{exercise.name}</strong>{current && <small>Current exercise</small>}</span><b>{exercise.status === "skipped" ? "Skipped" : `${completed}/${exercise.sets.length}`}</b></button>;
+  })}</div>;
+}
+
+function ReplacementList({ catalog, exercise, onPick, session }: { catalog: SwapExerciseOption[]; exercise: ActiveExercise; onPick: (exerciseId: string) => void; session: ActiveSession }) {
+  const [search, setSearch] = useState("");
+  const available = catalog.filter((option) => option.id !== exercise.exerciseId && !session.exercises.some((item) => item.exerciseId === option.id));
+  const groups = groupExercises(filterExercises(available, search, "all"));
+  return <>
+    <label className={styles.sheetSearch}><MagnifyingGlassIcon aria-hidden="true" size={18} /><input aria-label="Search exercises" autoComplete="off" enterKeyHint="search" onChange={(event) => setSearch(event.target.value)} placeholder="Search exercises" type="search" value={search} /></label>
+    <div className={styles.sheetList}>
+      {groups.length === 0 && <p className={styles.sheetEmpty}>No exercises match “{search.trim()}”.</p>}
+      {groups.map((group) => <section aria-labelledby={`replace-group-${group.key}`} className={styles.sheetGroup} key={group.key}>
+        <h3 id={`replace-group-${group.key}`}>{group.label}</h3>
+        {group.exercises.map((option) => <button key={option.id} onClick={() => onPick(option.id)} type="button"><span aria-hidden="true" /><span><strong>{option.name}</strong><small>{trackingLabel(option.trackingType)}</small></span><CaretRightIcon aria-hidden="true" size={16} weight="bold" /></button>)}
+      </section>)}
+    </div>
+  </>;
 }
 
 function trackingLabel(type: ActiveExercise["trackingType"]) { const labels: Record<ActiveExercise["trackingType"], string> = { added_weight_reps: "Added weight + reps", assistance_reps: "Assistance + reps", bodyweight_reps: "Bodyweight + reps", duration: "Duration", weight_distance: "Weight + distance", weight_duration: "Weight + duration", weight_reps: "Weight + reps" }; return labels[type]; }

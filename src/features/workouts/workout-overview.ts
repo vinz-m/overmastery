@@ -14,19 +14,6 @@ export function selectNextWorkout<TWorkout extends WorkoutTrainingHistory>(
   }, undefined);
 }
 
-export function latestTrainingDate(
-  trainingDates: readonly (string | null | undefined)[],
-) {
-  return trainingDates.reduce<string | undefined>((latest, trainingDate) => {
-    if (!trainingDate) return latest;
-    if (!latest) return trainingDate;
-
-    return trainingTime(trainingDate) > trainingTime(latest)
-      ? trainingDate
-      : latest;
-  }, undefined);
-}
-
 function trainingTime(value: string | null | undefined) {
   if (!value) return Number.NEGATIVE_INFINITY;
 

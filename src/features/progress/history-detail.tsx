@@ -5,13 +5,14 @@ import { formatDuration, formatPerformance, formatSessionDate } from "./format";
 import styles from "./progress.module.css";
 import type { ExerciseTimeline, HistorySession } from "./types";
 import type { UnitSystem } from "@/lib/units";
+import { navBack, navForward } from "@/features/navigation/page-transition";
 
 export function SessionHistoryDetail({ session, unitSystem }: { session: HistorySession; unitSystem: UnitSystem }) {
   return (
     <main className={styles.darkPage}>
       <section className={styles.darkShell}>
         <header className={styles.detailHeader}>
-          <Link href="/progress" aria-label="Back to progress"><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
+          <Link href="/progress" aria-label="Back to progress" transitionTypes={navBack}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <div><span>Training record</span><strong>{formatSessionDate(session.endedAt, true)}</strong></div>
         </header>
         <section className={styles.detailLead}>
@@ -26,14 +27,14 @@ export function SessionHistoryDetail({ session, unitSystem }: { session: History
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <div>
                   <h2>{exercise.name}</h2>
-                  <p>{exercise.completedSets ? formatPerformance(exercise.trackingType, exercise.loadKg, exercise.reps, unitSystem) : "Skipped"}</p>
+                  <p>{exercise.completedSets ? formatPerformance(exercise.trackingType, exercise.loadKg, exercise.reps, exercise.unit ?? unitSystem) : "Skipped"}</p>
                   <small>{planLabel(exercise.plannedCompletedSets, exercise.plannedSets, exercise.skippedSets, exercise.extraCompletedSets)}</small>
                 </div>
                 <strong className={styles[exercise.comparison.state]}>{exercise.comparison.label}</strong>
               </>
             );
             return exercise.exerciseId ? (
-              <Link href={`/progress/exercises/${exercise.exerciseId}`} key={exercise.id}>{content}</Link>
+              <Link href={`/progress/exercises/${exercise.exerciseId}`} key={exercise.id} transitionTypes={navForward}>{content}</Link>
             ) : (
               <article key={exercise.id}>{content}</article>
             );
@@ -50,23 +51,23 @@ export function ExerciseHistoryDetail({ timeline, unitSystem }: { timeline: Exer
     <main className={styles.page}>
       <section className={styles.detailShell}>
         <header className={styles.lightDetailHeader}>
-          <Link href="/progress" aria-label="Back to progress"><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
+          <Link href="/progress" aria-label="Back to progress" transitionTypes={navBack}><ArrowLeftIcon aria-hidden="true" size={20} weight="bold" /></Link>
           <span>Exercise history</span>
         </header>
         <section className={styles.exerciseLead}>
           <p>{timeline.exposures.length} recorded {timeline.exposures.length === 1 ? "exposure" : "exposures"}</p>
           <h1>{timeline.name}</h1>
-          <span>Latest · {formatPerformance(timeline.trackingType, latest.loadKg, latest.reps, unitSystem)}</span>
+          <span>Latest · {formatPerformance(timeline.trackingType, latest.loadKg, latest.reps, latest.unit ?? unitSystem)}</span>
         </section>
         <section className={styles.timeline}>
           {timeline.exposures.map((exposure, index) => (
-            <Link href={`/progress/sessions/${exposure.sessionId}`} key={exposure.id}>
+            <Link href={`/progress/sessions/${exposure.sessionId}`} key={exposure.id} transitionTypes={navForward}>
               <time dateTime={exposure.endedAt}>
                 <b>{formatSessionDate(exposure.endedAt)}</b>
                 <small>{index === 0 ? "Latest" : `Exposure ${timeline.exposures.length - index}`}</small>
               </time>
               <div>
-                <strong>{formatPerformance(timeline.trackingType, exposure.loadKg, exposure.reps, unitSystem)}</strong>
+                <strong>{formatPerformance(timeline.trackingType, exposure.loadKg, exposure.reps, exposure.unit ?? unitSystem)}</strong>
                 <small>{exposure.templateName} · {planLabel(exposure.plannedCompletedSets, exposure.plannedSets, exposure.skippedSets, exposure.extraCompletedSets)}</small>
               </div>
               <span className={styles[exposure.comparison.state]}>{exposure.comparison.label}</span>

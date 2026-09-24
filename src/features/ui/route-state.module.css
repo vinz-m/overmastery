@@ -96,6 +96,14 @@
   color: var(--on-accent);
 }
 
+/* A single action (e.g. the 404 page) spans the row as the primary action. */
+.actions > :only-child {
+  grid-column: 1 / -1;
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 @media (hover: hover) {
   .actions button:hover { background: var(--accent-hover); }
   .actions a:hover { background: var(--surface-soft); }

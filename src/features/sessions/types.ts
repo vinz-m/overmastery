@@ -1,9 +1,13 @@
 import type { Database } from "@/lib/supabase/database.types";
+import type { ExerciseCatalogItem } from "@/features/workouts/types";
+import type { UnitSystem } from "@/lib/units";
 
 export type TrackingType =
   Database["public"]["Enums"]["exercise_tracking_type"];
 
 export type ActiveSet = {
+  /** Unit the load was typed in; null means the profile default. */
+  enteredUnit: UnitSystem | null;
   id: string;
   isPlanned: boolean;
   loadKg: number | null;
@@ -16,6 +20,8 @@ export type ActiveSet = {
 export type PreviousPerformance = {
   loadKg: number | null;
   reps: number[];
+  /** Unit the load was entered in, when known. */
+  unit?: UnitSystem | null;
 };
 
 export type ActiveExercise = {
@@ -40,11 +46,7 @@ export type ActiveSession = {
   templateName: string;
 };
 
-export type SwapExerciseOption = {
-  id: string;
-  name: string;
-  trackingType: TrackingType;
-};
+export type SwapExerciseOption = ExerciseCatalogItem;
 
 export type SessionMutationResult = {
   message?: string;

@@ -8,6 +8,7 @@ import styles from "./confirm-dialog.module.css";
 
 type ConfirmDialogProps = {
   action: (formData: FormData) => void;
+  cancelLabel?: string;
   confirmLabel: string;
   description: string;
   error?: string;
@@ -22,6 +23,7 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({
   action,
+  cancelLabel = "Cancel",
   confirmLabel,
   description,
   error,
@@ -127,7 +129,7 @@ export function ConfirmDialog({
             ref={cancelRef}
             type="button"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button className={`${styles.confirm} ${styles[intent]}`} disabled={pending} type="submit">
             {pending ? pendingLabel : confirmLabel}

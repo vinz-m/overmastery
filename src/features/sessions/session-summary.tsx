@@ -11,6 +11,7 @@ import { sessionSummaryLead } from "./summary-copy";
 import styles from "./session-summary.module.css";
 import type { ActiveSession } from "./types";
 import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
+import { navBack } from "@/features/navigation/page-transition";
 
 export function SessionSummary({ session, unitSystem }: { session: ActiveSession; unitSystem: UnitSystem }) {
   const results = session.exercises.map((exercise) => {
@@ -20,7 +21,7 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
         current,
         exercise.previous,
         exercise.trackingType,
-        unitSystem,
+        current?.unit ?? unitSystem,
       ),
       current,
       exercise,
@@ -63,7 +64,7 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
                 <h2>{exercise.name}</h2>
                 <span>
                   {current
-                    ? performanceLabel(exercise.trackingType, current.loadKg, current.reps, unitSystem)
+                    ? performanceLabel(exercise.trackingType, current.loadKg, current.reps, current.unit ?? unitSystem)
                     : "Skipped"}
                 </span>
                 <small>{planOutcomeLabel(plan)}</small>
@@ -74,7 +75,7 @@ export function SessionSummary({ session, unitSystem }: { session: ActiveSession
             </article>
           ))}
         </section>
-        <Link className={styles.homeAction} href="/">
+        <Link className={styles.homeAction} href="/" transitionTypes={navBack}>
           Done <ArrowRightIcon aria-hidden="true" size={19} weight="bold" />
         </Link>
       </section>

@@ -4,6 +4,7 @@ import { getHistorySession } from "@/features/progress/data";
 import { SessionHistoryDetail } from "@/features/progress/history-detail";
 import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { PageTransition } from "@/features/navigation/page-transition";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,5 +23,5 @@ export default async function HistoricalSessionPage({
   ]);
   if (!session) notFound();
 
-  return <SessionHistoryDetail session={session} unitSystem={user.unitSystem} />;
+  return <PageTransition><SessionHistoryDetail session={session} unitSystem={user.unitSystem} /></PageTransition>;
 }

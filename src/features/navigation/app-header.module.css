@@ -1,5 +1,5 @@
 .header { display: flex; align-items: center; justify-content: space-between; min-height: 94px; padding: 24px 28px; }
-.brand { display: inline-flex; gap: 10px; align-items: center; text-decoration: none; font-size: 19px; font-weight: 600; letter-spacing: -.7px; }
+.brand { min-height: 44px; display: inline-flex; gap: 10px; align-items: center; text-decoration: none; font-size: 19px; font-weight: 600; letter-spacing: -.7px; }
 .mark { width: 48px; height: 20px; flex: none; background: url("/brand/overmastery-mark-on-light.svg?v=horizontal") center / contain no-repeat; }
 :global(:root[data-theme="dark"]) .mark { background-image: url("/brand/overmastery-mark-on-dark.svg?v=horizontal"); }
 .wordOver { color: var(--brand-o); }

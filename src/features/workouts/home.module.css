@@ -16,17 +16,29 @@
 .todayWorkoutLabel span { color: var(--muted); } .todayWorkoutLabel small { color: var(--muted); }
 .guide { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 8px 10px 8px 13px; border-radius: 12px; background: var(--accent-soft); color: var(--muted); font-size: 12px; }
 .guide button { width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); font-size: 20px; }
-.todaySummary { margin: 30px 20px 0; }
-.todaySummary > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.todaySummary h2 { font-size: 18px; } .todaySummary a { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-size: 13px; text-decoration: none; }
-.todaySummary > div { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
-.todaySummary article { min-height: 96px; display: grid; align-content: center; gap: 9px; padding: 16px; }
-.todaySummary article + article { border-inline-start: 1px solid var(--border); }
-.todaySummary span { color: var(--muted); font-size: 12px; } .todaySummary strong { font: 600 22px var(--font-geist-mono); }
+.week { margin: 30px 20px 0; }
+.week > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.week h2 { font-size: 18px; } .week > header a { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-size: 13px; text-decoration: none; }
+.weekCard { padding: 16px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.weekDays { display: grid; grid-template-columns: repeat(7, 1fr); margin: 0; padding: 0; list-style: none; }
+.weekDays li { display: grid; justify-items: center; gap: 8px; color: var(--muted); font: 600 11px var(--font-geist-mono); }
+/* A day is an outlined ring until trained, then a filled dot; today is ringed in the accent. */
+.weekDays i { width: 26px; height: 26px; border: 1.5px solid var(--control-border); border-radius: 50%; }
+.weekDays .weekTrained i { border-color: var(--positive); background: var(--positive); }
+.weekDays .weekToday { color: var(--foreground); } .weekDays .weekToday i { border-color: var(--accent); border-width: 2px; }
+.weekDays .weekToday.weekTrained i { box-shadow: 0 0 0 3px var(--accent-soft); }
+.weekDays .weekFuture { opacity: .6; } .weekDays .weekFuture i { border-style: dashed; }
+.weekCard > p { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--border); font-size: 14px; font-weight: 600; } .weekCard > p span { color: var(--muted); font-weight: 400; }
+.workoutPreview { display: grid; margin: 14px 0 0; padding: 0; list-style: none; }
+.workoutPreview li { min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); font-size: 14px; }
+.workoutPreview li:first-child { border-top: 0; } .workoutPreview span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workoutPreview small { flex: none; color: var(--muted); font: 500 12px var(--font-geist-mono); }
+.workoutPreview .previewMore { color: var(--muted); font-size: 12px; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .libraryHeader { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
 .libraryHeader > a { min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600; text-decoration: none; }
 .activeBanner { min-height: 70px; display: grid; grid-template-columns: 1fr 24px; align-items: center; gap: 3px 10px; margin: 0 20px 14px; padding: 13px 16px; border-radius: 16px; background: var(--accent-soft); color: inherit; text-decoration: none; }
-.activeBanner span { color: var(--accent); font-size: 11px; } .activeBanner strong { grid-column: 1; font-size: 14px; } .activeBanner i { grid-column: 2; grid-row: 1 / 3; display: grid; place-items: center; color: var(--accent); font-style: normal; }
+.activeBanner span { color: var(--accent); font-size: 11px; } .activeBanner strong { grid-column: 1; font-size: 14px; } .activeBanner small { grid-column: 1; color: var(--muted); font-size: 12px; } .activeBanner i { grid-column: 2; grid-row: 1 / 4; display: grid; place-items: center; color: var(--accent); font-style: normal; }
 .workoutList { display: grid; gap: 12px; margin: 0 20px; }
 .workoutRow { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
 .workoutRow > div { min-width: 0; } .workoutRow span { color: var(--muted); font-size: 11px; } .workoutRow h2 { margin: 6px 0 8px; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
