@@ -14,7 +14,7 @@ import {
   useTheme,
   type ThemePreference,
 } from "@/features/theme/theme-provider";
-import { SelectField } from "@/features/ui/select-field";
+import { SelectField, type SelectOption } from "@/features/ui/select-field";
 import { ContextualTip } from "@/features/guidance/contextual-tip";
 import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
 import type { UnitSystem } from "@/lib/units";
@@ -39,7 +39,7 @@ export function ProfileSettings({
   email,
   guidance,
   timeZone,
-  timeZones,
+  timeZoneOptions,
   unitSystem,
 }: {
   createdAt?: string;
@@ -47,7 +47,7 @@ export function ProfileSettings({
   email: string;
   guidance: GuidanceState;
   timeZone: string;
-  timeZones: string[];
+  timeZoneOptions: SelectOption[];
   unitSystem: UnitSystem;
 }) {
   const [profileState, profileAction, profilePending] = useActionState(
@@ -119,19 +119,20 @@ export function ProfileSettings({
               <small role="alert">{profileState.fieldErrors.unitSystem}</small>
             )}
           </div>
-          <Field error={profileState.fieldErrors?.timeZone} label="Time zone">
-            <input
+          <div className={styles.field}>
+            <span>Time zone</span>
+            <SelectField
+              ariaLabel="Time zone"
               defaultValue={timeZone}
-              list="time-zones"
               name="timeZone"
-              required
+              options={timeZoneOptions}
+              searchable
+              searchPlaceholder="Search city, region or GMT+8"
             />
-            <datalist id="time-zones">
-              {timeZones.map((zone) => (
-                <option key={zone} value={zone} />
-              ))}
-            </datalist>
-          </Field>
+            {profileState.fieldErrors?.timeZone && (
+              <small role="alert">{profileState.fieldErrors.timeZone}</small>
+            )}
+          </div>
           <p className={styles.help}>
             Choose the units you prefer. Your previous sessions will use them
             too.
