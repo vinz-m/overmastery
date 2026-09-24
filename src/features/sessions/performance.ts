@@ -5,6 +5,7 @@ import type {
 } from "./types";
 import {
   formatDisplayDelta,
+  formatDisplayLoad,
   loadUnit,
   type UnitSystem,
 } from "../../lib/units.ts";
@@ -101,4 +102,25 @@ export function formatLoad(value: number | null) {
 
 export function formatReps(reps: number[]) {
   return reps.length > 0 ? reps.join(" / ") : "—";
+}
+
+/** "80 kg", "+10 kg" on a bodyweight exercise, "30 kg assistance", or null at plain bodyweight. */
+export function formatSetLoad(
+  trackingType: TrackingType,
+  loadKg: number | null,
+  unitSystem: UnitSystem,
+) {
+  const load = `${formatDisplayLoad(loadKg, unitSystem)} ${loadUnit(unitSystem)}`;
+  if (trackingType === "bodyweight_reps") return loadKg ? `+${load}` : null;
+  return trackingType === "assistance_reps" ? `${load} assistance` : load;
+}
+
+export function formatPerformance(
+  trackingType: TrackingType,
+  loadKg: number | null,
+  reps: number[],
+  unitSystem: UnitSystem,
+) {
+  const load = formatSetLoad(trackingType, loadKg, unitSystem);
+  return load ? `${load} · ${formatReps(reps)}` : `${formatReps(reps)} reps`;
 }

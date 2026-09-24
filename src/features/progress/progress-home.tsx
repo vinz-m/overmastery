@@ -4,10 +4,11 @@ import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import { ContextualTip } from "@/features/guidance/contextual-tip";
 import { hasSeenGuidance, type GuidanceState } from "@/features/guidance/model";
 
-import { formatPerformance, formatSessionDate } from "./format";
+import { formatSessionDate } from "./format";
 import styles from "./progress.module.css";
 import type { ExerciseTimeline, HistorySession } from "./types";
 import type { UnitSystem } from "@/lib/units";
+import { formatPerformance } from "@/features/sessions/performance";
 import { navForward, navTab } from "@/features/navigation/page-transition";
 
 export function ProgressHome({

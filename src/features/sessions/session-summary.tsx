@@ -4,13 +4,13 @@ import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import {
   comparePerformance,
   completedPerformance,
-  formatReps,
+  formatPerformance,
 } from "./performance";
 import { planOutcomeLabel, projectSetPlan } from "./set-policy";
 import { sessionSummaryLead } from "./summary-copy";
 import styles from "./session-summary.module.css";
 import type { ActiveSession } from "./types";
-import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
+import type { UnitSystem } from "@/lib/units";
 import { navBack } from "@/features/navigation/page-transition";
 
 export function SessionSummary({
@@ -71,7 +71,7 @@ export function SessionSummary({
                 <h2>{exercise.name}</h2>
                 <span>
                   {current
-                    ? performanceLabel(
+                    ? formatPerformance(
                         exercise.trackingType,
                         current.loadKg,
                         current.reps,
@@ -93,14 +93,4 @@ export function SessionSummary({
       </section>
     </main>
   );
-}
-
-function performanceLabel(
-  trackingType: ActiveSession["exercises"][number]["trackingType"],
-  loadKg: number | null,
-  reps: number[],
-  unitSystem: UnitSystem,
-) {
-  if (trackingType === "bodyweight_reps") return `${formatReps(reps)} reps`;
-  return `${formatDisplayLoad(loadKg, unitSystem)} ${loadUnit(unitSystem)} · ${formatReps(reps)}`;
 }

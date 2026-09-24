@@ -28,7 +28,6 @@ import {
 } from "./actions";
 import {
   convertLoadInput,
-  formatDisplayLoad,
   loadStep,
   loadUnit,
   toDisplayLoad,
@@ -41,6 +40,8 @@ import {
   groupExercises,
 } from "@/features/exercises/exercise-filter";
 import { useDismissibleDetails } from "@/features/ui/use-dismissible-details";
+import { trackingLabel } from "@/features/workouts/tracking";
+import { formatSetLoad } from "./performance";
 import {
   canAddExtraSet,
   planOutcomeLabel,
@@ -514,9 +515,11 @@ function ActiveSetEditor({
   const [reps, setReps] = useState(
     prefill.reps === null ? "" : String(prefill.reps),
   );
-  const loadRequired = exercise.trackingType !== "bodyweight_reps";
+  // Bodyweight exercises can carry added weight (a plate, a dip belt) but don't need it.
+  const loadOptional = exercise.trackingType === "bodyweight_reps";
+  const hasLoad = load !== "";
   const canComplete =
-    reps !== "" && (!loadRequired || (load !== "" && Number(load) >= 0));
+    reps !== "" && (hasLoad ? Number(load) >= 0 : loadOptional);
   return (
     <section className={styles.activeSet}>
       <header>
@@ -537,35 +540,29 @@ function ActiveSetEditor({
         </strong>
       </p>
       <div className={styles.setInputs}>
-        {loadRequired ? (
-          <label>
-            <span>{loadLabel(exercise.trackingType)}</span>
-            <div>
-              <input
-                aria-label={`${loadLabel(exercise.trackingType)} in ${unit === "imperial" ? "pounds" : "kilograms"}`}
-                inputMode="decimal"
-                min="0"
-                onChange={(event) => setLoad(event.target.value)}
-                step={loadStep(unit)}
-                type="number"
-                value={load}
-              />
-              <button
-                aria-label={`Switch to ${otherUnit === "imperial" ? "pounds" : "kilograms"}`}
-                className={styles.unitToggle}
-                onClick={switchUnit}
-                type="button"
-              >
-                {loadUnit(unit)}
-              </button>
-            </div>
-          </label>
-        ) : (
-          <div className={styles.bodyweightField}>
-            <span>Load</span>
-            <strong>Bodyweight</strong>
+        <label>
+          <span>{loadLabel(exercise.trackingType)}</span>
+          <div>
+            <input
+              aria-label={`${loadLabel(exercise.trackingType)} in ${unit === "imperial" ? "pounds" : "kilograms"}${loadOptional ? ", optional" : ""}`}
+              inputMode="decimal"
+              min="0"
+              onChange={(event) => setLoad(event.target.value)}
+              placeholder={loadOptional ? "0" : undefined}
+              step={loadStep(unit)}
+              type="number"
+              value={load}
+            />
+            <button
+              aria-label={`Switch to ${otherUnit === "imperial" ? "pounds" : "kilograms"}`}
+              className={styles.unitToggle}
+              onClick={switchUnit}
+              type="button"
+            >
+              {loadUnit(unit)}
+            </button>
           </div>
-        )}
+        </label>
         <label>
           <span>Reps</span>
           <input
@@ -584,8 +581,8 @@ function ActiveSetEditor({
         disabled={pending || !canComplete}
         onClick={() =>
           logSet({
-            loadKg: loadRequired ? toKilograms(Number(load), unit) : null,
-            loadUnit: loadRequired ? unit : null,
+            loadKg: hasLoad ? toKilograms(Number(load), unit) : null,
+            loadUnit: hasLoad ? unit : null,
             reps: Number(reps),
             sessionId,
             setId: set.id,
@@ -936,22 +933,9 @@ function ReplacementList({
     </>
   );
 }
-
-function trackingLabel(type: ActiveExercise["trackingType"]) {
-  const labels: Record<ActiveExercise["trackingType"], string> = {
-    added_weight_reps: "Added weight + reps",
-    assistance_reps: "Assistance + reps",
-    bodyweight_reps: "Bodyweight + reps",
-    duration: "Duration",
-    weight_distance: "Weight + distance",
-    weight_duration: "Weight + duration",
-    weight_reps: "Weight + reps",
-  };
-  return labels[type];
-}
 function loadLabel(type: ActiveExercise["trackingType"]) {
   if (type === "assistance_reps") return "Assistance";
-  if (type === "added_weight_reps") return "Added weight";
+  if (type === "bodyweight_reps") return "Added weight";
   return "Weight";
 }
 function previousSetLabel(
@@ -960,8 +944,12 @@ function previousSetLabel(
   unitSystem: UnitSystem,
 ) {
   const reps = exercise.previous.reps[position];
-  if (exercise.trackingType === "bodyweight_reps") return `${reps ?? "—"} reps`;
-  return `${formatDisplayLoad(exercise.previous.loadKg, unitSystem)} ${loadUnit(unitSystem)} × ${reps ?? "—"} reps`;
+  const load = formatSetLoad(
+    exercise.trackingType,
+    exercise.previous.loadKg,
+    unitSystem,
+  );
+  return load ? `${load} × ${reps ?? "—"} reps` : `${reps ?? "—"} reps`;
 }
 function setName(set: ActiveExercise["sets"][number], targetSets: number) {
   return set.isPlanned

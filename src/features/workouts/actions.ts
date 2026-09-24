@@ -8,6 +8,7 @@ import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import type { ExerciseCatalogItem, ExerciseTrackingType } from "./types";
+import { supportedTrackingTypes } from "./tracking";
 import { isWorkoutId, readWorkoutDraft } from "./workout-draft";
 
 export type CreateWorkoutState = {
@@ -33,12 +34,7 @@ export type CustomExerciseState = {
   message?: string;
 };
 
-const supportedTrackingTypes = new Set<ExerciseTrackingType>([
-  "weight_reps",
-  "bodyweight_reps",
-  "added_weight_reps",
-  "assistance_reps",
-]);
+const trackingTypes = new Set(supportedTrackingTypes);
 
 export async function createWorkout(
   _previousState: CreateWorkoutState,
@@ -250,7 +246,7 @@ export async function createCustomExercise(
     return { message: "Use between 2 and 120 characters." };
   }
 
-  if (!supportedTrackingTypes.has(trackingType)) {
+  if (!trackingTypes.has(trackingType)) {
     return { message: "Choose a supported tracking type." };
   }
 
@@ -301,7 +297,7 @@ export async function updateCustomExercise(
   if (name.length < 2 || name.length > 120) {
     fieldErrors.name = "Use between 2 and 120 characters.";
   }
-  if (!supportedTrackingTypes.has(trackingType)) {
+  if (!trackingTypes.has(trackingType)) {
     fieldErrors.trackingType = "Choose a supported tracking type.";
   }
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };

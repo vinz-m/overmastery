@@ -17,7 +17,8 @@ import type {
   PreviousPerformance,
   TrackingType,
 } from "@/features/sessions/types";
-import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
+import { formatSetLoad } from "@/features/sessions/performance";
+import type { UnitSystem } from "@/lib/units";
 import { selectNextWorkout } from "./workout-overview";
 import { StartWorkoutForm } from "./start-workout-form";
 import { WorkoutPreview } from "./workout-preview";
@@ -304,9 +305,12 @@ function lastResult(
 ) {
   const reps = previous?.reps[0];
   if (!previous || reps === undefined) return "New";
-  if (trackingType === "bodyweight_reps") return `${reps} reps`;
-  const unit = previous.unit ?? unitSystem;
-  return `${formatDisplayLoad(previous.loadKg, unit)} ${loadUnit(unit)} × ${reps}`;
+  const load = formatSetLoad(
+    trackingType,
+    previous.loadKg,
+    previous.unit ?? unitSystem,
+  );
+  return load ? `${load} × ${reps}` : `${reps} reps`;
 }
 
 function WorkoutLibrary({

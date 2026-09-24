@@ -16,6 +16,7 @@ import {
   updateCustomExercise,
 } from "@/features/workouts/actions";
 import type { ExerciseCatalogItem } from "@/features/workouts/types";
+import { trackingLabel, trackingOptions } from "@/features/workouts/tracking";
 
 import {
   filterExercises,
@@ -29,12 +30,6 @@ const MotionCaretDown = motion.create(CaretDownIcon);
 
 const initialExerciseState: CreateExerciseState = {};
 const initialCustomExerciseState: CustomExerciseState = {};
-const trackingOptions = [
-  { label: "Weight + reps", value: "weight_reps" },
-  { label: "Bodyweight + reps", value: "bodyweight_reps" },
-  { label: "Added weight + reps", value: "added_weight_reps" },
-  { label: "Assistance + reps", value: "assistance_reps" },
-];
 const sourceFilters: { label: string; value: ExerciseSourceFilter }[] = [
   { label: "All", value: "all" },
   { label: "Library", value: "library" },
@@ -543,17 +538,4 @@ function emptyMessage(search: string, source: ExerciseSourceFilter) {
   }
   if (source === "library") return "No library exercises are available.";
   return "No exercises are available yet.";
-}
-
-function trackingLabel(type: ExerciseCatalogItem["trackingType"]) {
-  const labels: Record<ExerciseCatalogItem["trackingType"], string> = {
-    added_weight_reps: "Added weight + reps",
-    assistance_reps: "Assistance + reps",
-    bodyweight_reps: "Bodyweight + reps",
-    duration: "Duration",
-    weight_distance: "Weight + distance",
-    weight_duration: "Weight + duration",
-    weight_reps: "Weight + reps",
-  };
-  return labels[type];
 }

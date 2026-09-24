@@ -1,22 +1,3 @@
-import type { TrackingType } from "@/features/sessions/types";
-
-import { formatReps } from "@/features/sessions/performance";
-import { formatDisplayLoad, loadUnit, type UnitSystem } from "@/lib/units";
-
-export function formatPerformance(
-  trackingType: TrackingType,
-  loadKg: number | null,
-  reps: number[],
-  unitSystem: UnitSystem,
-) {
-  if (trackingType === "bodyweight_reps") return `${formatReps(reps)} reps`;
-  const noun =
-    trackingType === "assistance_reps"
-      ? `${loadUnit(unitSystem)} assistance`
-      : loadUnit(unitSystem);
-  return `${formatDisplayLoad(loadKg, unitSystem)} ${noun} · ${formatReps(reps)}`;
-}
-
 export function formatSessionDate(value: string, long = false) {
   return new Intl.DateTimeFormat("en", {
     day: "numeric",

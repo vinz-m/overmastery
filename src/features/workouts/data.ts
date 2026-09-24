@@ -5,16 +5,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
 import type { HomeActiveSession, HomeWorkout } from "./home";
+import { supportedTrackingTypes } from "./tracking";
 import type { WorkoutTemplateDraft } from "./types";
 
 type Client = SupabaseClient<Database>;
 
-const supportedTrackingTypes = [
-  "weight_reps",
-  "bodyweight_reps",
-  "added_weight_reps",
-  "assistance_reps",
-] as const;
 const globalExerciseCacheTtlMs = 60 * 60 * 1000;
 
 type CatalogRows = Awaited<ReturnType<typeof fetchGlobalExercises>>;

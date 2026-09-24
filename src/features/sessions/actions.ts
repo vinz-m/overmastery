@@ -220,30 +220,29 @@ export async function completeSet(input: {
   }
 
   const trackingType = exercise.tracking_type;
-  const loadRequired = trackingType !== "bodyweight_reps";
+  // Added weight on a bodyweight exercise is optional; everything else needs a load.
+  const loadOptional = trackingType === "bodyweight_reps";
   if (
-    loadRequired &&
-    (input.loadKg === null ||
-      !Number.isFinite(input.loadKg) ||
-      input.loadKg < 0 ||
-      input.loadKg > 10000)
+    input.loadKg === null
+      ? !loadOptional
+      : !Number.isFinite(input.loadKg) ||
+        input.loadKg < 0 ||
+        input.loadKg > 10000
   ) {
     return failure("Enter a valid load.");
   }
+  const loadKg = loadOptional && input.loadKg === 0 ? null : input.loadKg;
 
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("exercise_sets")
     .update({
-      assistance_kg: trackingType === "assistance_reps" ? input.loadKg : null,
+      assistance_kg: trackingType === "assistance_reps" ? loadKg : null,
       completed_at: now,
-      entered_unit: loadRequired ? input.loadUnit : null,
+      entered_unit: loadKg === null ? null : input.loadUnit,
       reps: input.reps,
       status: "completed",
-      weight_kg:
-        trackingType === "bodyweight_reps" || trackingType === "assistance_reps"
-          ? null
-          : input.loadKg,
+      weight_kg: trackingType === "assistance_reps" ? null : loadKg,
     })
     .eq("id", set.id);
 

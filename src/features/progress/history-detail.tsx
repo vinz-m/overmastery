@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "@phosphor-icons/react/ssr";
 
-import { formatDuration, formatPerformance, formatSessionDate } from "./format";
+import { formatDuration, formatSessionDate } from "./format";
 import styles from "./progress.module.css";
 import type { ExerciseTimeline, HistorySession } from "./types";
 import type { UnitSystem } from "@/lib/units";
+import { formatPerformance } from "@/features/sessions/performance";
 import { navBack, navForward } from "@/features/navigation/page-transition";
 
 export function SessionHistoryDetail({

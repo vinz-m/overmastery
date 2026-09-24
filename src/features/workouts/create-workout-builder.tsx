@@ -37,6 +37,7 @@ import {
   type CreateWorkoutState,
 } from "./actions";
 import styles from "./create-workout.module.css";
+import { trackingLabel, trackingOptions } from "./tracking";
 
 const MotionCaretDown = motion.create(CaretDownIcon);
 import type {
@@ -48,12 +49,6 @@ import { navBack } from "@/features/navigation/page-transition";
 
 const initialWorkoutState: CreateWorkoutState = {};
 const initialExerciseState: CreateExerciseState = {};
-const trackingOptions = [
-  { label: "Weight + reps", value: "weight_reps" },
-  { label: "Bodyweight + reps", value: "bodyweight_reps" },
-  { label: "Added weight + reps", value: "added_weight_reps" },
-  { label: "Assistance + reps", value: "assistance_reps" },
-];
 
 type DraftField =
   "defaultRestSeconds" | "targetRepMax" | "targetRepMin" | "targetSets";
@@ -695,17 +690,4 @@ function NumberField({
       />
     </label>
   );
-}
-
-function trackingLabel(type: ExerciseCatalogItem["trackingType"]) {
-  const labels: Record<ExerciseCatalogItem["trackingType"], string> = {
-    added_weight_reps: "Added weight + reps",
-    assistance_reps: "Assistance + reps",
-    bodyweight_reps: "Bodyweight + reps",
-    duration: "Duration",
-    weight_distance: "Weight + distance",
-    weight_duration: "Weight + duration",
-    weight_reps: "Weight + reps",
-  };
-  return labels[type];
 }
