@@ -6,8 +6,7 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
-import { closeExpiredSession, expireStaleSession } from "./expire-session";
-import { isSessionExpired } from "./session-day";
+import { expireStaleSession } from "./expire-session";
 import type { SessionMutationResult } from "./types";
 import { canAddExtraSet } from "./set-policy";
 
@@ -34,12 +33,22 @@ export async function startWorkout(
   await expireStaleSession(supabase, userId);
   const { data: existing } = await supabase
     .from("training_sessions")
-    .select("id")
+    .select("id, session_exercises ( id )")
     .eq("user_id", userId)
     .eq("status", "active")
     .maybeSingle();
 
-  if (existing) redirect(`/sessions/${existing.id}`);
+  if (existing) {
+    // A session left with no exercises by a start that failed partway can't
+    // be resumed, so clear it rather than send the user back to it.
+    if (existing.session_exercises.length > 0)
+      redirect(`/sessions/${existing.id}`);
+    await supabase
+      .from("training_sessions")
+      .delete()
+      .eq("id", existing.id)
+      .eq("status", "active");
+  }
 
   const { data: template, error: templateError } = await supabase
     .from("workout_templates")
@@ -160,94 +169,6 @@ export async function startWorkout(
 
   revalidatePath("/");
   redirect(`/sessions/${session.id}`);
-}
-
-export async function completeSet(input: {
-  loadKg: number | null;
-  loadUnit: "imperial" | "metric" | null;
-  reps: number;
-  sessionId: string;
-  setId: string;
-}): Promise<SessionMutationResult> {
-  if (
-    !validSessionInput(input.sessionId, input.setId) ||
-    !Number.isInteger(input.reps) ||
-    input.reps < 0 ||
-    input.reps > 1000 ||
-    (input.loadUnit !== null &&
-      input.loadUnit !== "metric" &&
-      input.loadUnit !== "imperial")
-  ) {
-    return failure("Enter a valid set.");
-  }
-
-  await requireUserId();
-  const supabase = await createClient();
-  const { data: set } = await supabase
-    .from("exercise_sets")
-    .select(
-      `
-      id,
-      session_exercise_id,
-      session_exercises (
-        tracking_type,
-        training_session_id,
-        training_sessions ( started_at, status )
-      )
-    `,
-    )
-    .eq("id", input.setId)
-    .single();
-
-  const exercise = set?.session_exercises;
-  if (
-    !set ||
-    !exercise ||
-    exercise.training_session_id !== input.sessionId ||
-    exercise.training_sessions?.status !== "active"
-  ) {
-    return failure("This workout is no longer active.");
-  }
-  if (isSessionExpired(exercise.training_sessions.started_at)) {
-    await closeExpiredSession(
-      supabase,
-      input.sessionId,
-      exercise.training_sessions.started_at,
-    );
-    return failure(
-      "This workout was closed automatically after 6 hours. Start a new one to keep logging.",
-    );
-  }
-
-  const trackingType = exercise.tracking_type;
-  // Added weight on a bodyweight exercise is optional; everything else needs a load.
-  const loadOptional = trackingType === "bodyweight_reps";
-  if (
-    input.loadKg === null
-      ? !loadOptional
-      : !Number.isFinite(input.loadKg) ||
-        input.loadKg < 0 ||
-        input.loadKg > 10000
-  ) {
-    return failure("Enter a valid load.");
-  }
-  const loadKg = loadOptional && input.loadKg === 0 ? null : input.loadKg;
-
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("exercise_sets")
-    .update({
-      assistance_kg: trackingType === "assistance_reps" ? loadKg : null,
-      completed_at: now,
-      entered_unit: loadKg === null ? null : input.loadUnit,
-      reps: input.reps,
-      status: "completed",
-      weight_kg: trackingType === "assistance_reps" ? null : loadKg,
-    })
-    .eq("id", set.id);
-
-  if (error) return failure("The set could not be saved. Try again.");
-  return succeeded();
 }
 
 export async function reopenSet(input: {
@@ -622,8 +543,8 @@ export type DiscardSessionState = {
 
 // A workout with nothing logged was most likely started by accident, so it is
 // deleted outright (its exercises and sets cascade). Once sets are logged it is
-// closed as abandoned instead, like the day-boundary expiry, so the data isn't
-// lost but never reaches history, progress, or previous-performance prefill.
+// closed as abandoned instead, so the data isn't lost but never reaches
+// history, progress, or previous-performance prefill.
 export async function discardSession(
   sessionId: string,
   previousState: DiscardSessionState,

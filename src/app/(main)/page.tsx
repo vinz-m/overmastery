@@ -1,4 +1,5 @@
 import { getLatestPerformances } from "@/features/sessions/data";
+import { closeIdleSession } from "@/features/sessions/idle-session";
 import type { PreviousPerformance } from "@/features/sessions/types";
 import { getWorkoutOverview } from "@/features/workouts/data";
 import { WorkoutHome } from "@/features/workouts/home";
@@ -11,10 +12,13 @@ export default async function Home() {
   // Verify the sign-in (locally, from the JWT) before any query. The layout's
   // check runs in parallel with this page, so it can't stop these queries, and
   // a signed-out request would hit the database as `anon` and be refused.
-  const [, supabase] = await Promise.all([requireUserId(), createClient()]);
+  const [userId, supabase] = await Promise.all([
+    requireUserId(),
+    createClient(),
+  ]);
   const [user, overview] = await Promise.all([
     requireUser(),
-    getWorkoutOverview(supabase),
+    closeIdleSession(userId).then(() => getWorkoutOverview(supabase)),
   ]);
 
   // Last results for the suggested workout's exercises, so Today can show

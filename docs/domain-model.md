@@ -43,7 +43,7 @@ Stores a name and an ordered list of exercises. It describes intent, not history
 
 ### Training Session
 
-Stores the lifecycle and timing of one real training occurrence. Its lifecycle is `active → completed` or `active → abandoned`. A completed or abandoned session cannot become active again.
+Stores the lifecycle and timing of one real training occurrence. Its lifecycle is `active → completed` or `active → abandoned`. A completed or abandoned session cannot become active again. A session with no set logged for 4 hours is closed automatically: completed, ending at its last logged set, or removed if nothing was logged. Abandoned means the user discarded a session that had logged sets. A set logged offline is judged by when it was logged, so it can still join its session after the session was closed.
 
 ### Session Exercise
 

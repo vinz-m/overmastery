@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { unstable_isUnrecognizedActionError } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   ArrowLeftIcon,
@@ -17,7 +18,6 @@ import { AnimatePresence, motion, useDragControls } from "motion/react";
 
 import {
   addExtraSet,
-  completeSet,
   finishSession,
   removeWorkingSet,
   reopenSet,
@@ -55,6 +55,7 @@ import styles from "./active-session.module.css";
 import type {
   ActiveExercise,
   ActiveSession,
+  CompleteSetInput,
   SessionMutationResult,
   SwapExerciseOption,
 } from "./types";
@@ -64,8 +65,7 @@ type Mutate = (
   action: () => Promise<SessionMutationResult>,
   afterSuccess?: () => void,
 ) => void;
-type LogSetInput = Parameters<typeof completeSet>[0];
-type LogSet = (input: LogSetInput) => void;
+type LogSet = (input: CompleteSetInput) => void;
 
 const offlineMessage =
   "You’re offline. This change needs a connection, so try again once you’re back online.";
@@ -81,9 +81,12 @@ export function ActiveSessionScreen({
 }) {
   const [message, setMessage] = useState<string | null>(null);
   const showRejected = useCallback((text: string) => setMessage(text), []);
-  const queue = useOfflineSetQueue(serverSession.id, showRejected);
+  const queue = useOfflineSetQueue(serverSession, showRejected);
   const session = applyPendingSets(serverSession, queue.pending);
-  const waitingToSync = Object.keys(queue.pending).length;
+  const waitingToSync = queue.waiting;
+  // The app was redeployed since this page loaded, so its server actions no
+  // longer exist. Retrying can't help; only a reload can.
+  const [outdated, setOutdated] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [currentExerciseId, setCurrentExerciseId] = useState(
@@ -139,9 +142,10 @@ export function ActiveSessionScreen({
       let result: SessionMutationResult;
       try {
         result = await action();
-      } catch {
-        // A thrown action means the request never completed (usually no signal).
-        setMessage(offlineMessage);
+      } catch (error) {
+        if (unstable_isUnrecognizedActionError(error)) setOutdated(true);
+        // Otherwise the request never completed (usually no signal).
+        else setMessage(offlineMessage);
         return;
       }
       if (!result.ok) {
@@ -154,27 +158,54 @@ export function ActiveSessionScreen({
       afterSuccess?.();
     });
   };
+  // Shown as done at once; the queue sends it in the background.
   const logSet: LogSet = (input) => {
-    startTransition(async () => {
-      setMessage(null);
-      let result: SessionMutationResult;
-      try {
-        result = await completeSet(input);
-      } catch {
-        queue.enqueue(input);
-        return;
-      }
-      if (!result.ok)
-        setMessage(result.message ?? "The set could not be saved. Try again.");
-    });
+    setMessage(null);
+    queue.enqueue(input);
   };
-  // A set that hasn't synced yet is simply un-logged on the device.
+  // A set that hasn't synced yet is simply un-logged on the device; one the
+  // server already has must be reopened there too.
   const reopen = (setId: string) => {
-    if (queue.pending[setId]) queue.discard(setId);
-    else mutate(() => reopenSet({ sessionId: session.id, setId }));
+    const queued = queue.pending[setId];
+    if (queued) queue.discard(setId);
+    if (!queued || queued.synced)
+      mutate(() => reopenSet({ sessionId: session.id, setId }));
   };
 
-  if (!currentExercise) return null;
+  // Only reachable if starting a workout failed partway; without this the
+  // screen would be blank with no way to clear the session.
+  if (!currentExercise)
+    return (
+      <main className={styles.page}>
+        <section className={styles.shell}>
+          <header className={styles.stickyHeader}>
+            <Link
+              aria-label="Leave active workout"
+              href="/"
+              transitionTypes={navBack}
+            >
+              <ArrowLeftIcon aria-hidden="true" size={22} weight="bold" />
+            </Link>
+            <div>
+              <strong>{session.templateName}</strong>
+            </div>
+          </header>
+          <div className={styles.content}>
+            <div className={styles.statusCard}>
+              <strong>This workout didn’t finish setting up</strong>
+              <p>
+                It has no exercises. Discard it, then start the workout again.
+              </p>
+              <DiscardWorkoutButton
+                className={styles.emptyDiscard}
+                completedSets={0}
+                sessionId={session.id}
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+    );
   const currentIndex = session.exercises.findIndex(
     (exercise) => exercise.id === currentExercise.id,
   );
@@ -230,12 +261,28 @@ export function ActiveSessionScreen({
             {message}
           </div>
         )}
-        {waitingToSync > 0 && (
-          <div className={styles.syncBanner} role="status">
-            {waitingToSync} {waitingToSync === 1 ? "set is" : "sets are"} saved
-            on this phone and will sync when you’re back online. Finish once
-            they’ve synced.
+        {outdated ? (
+          <div className={styles.syncBanner} role="alert">
+            Overmastery was updated. Reload to keep logging.{" "}
+            {waitingToSync > 0 &&
+              "Your unsynced sets are saved on this phone and will sync after you reload. "}
+            <button
+              className={styles.bannerAction}
+              onClick={() => window.location.reload()}
+              type="button"
+            >
+              Reload
+            </button>
           </div>
+        ) : (
+          queue.stalled &&
+          waitingToSync > 0 && (
+            <div className={styles.syncBanner} role="status">
+              {waitingToSync} {waitingToSync === 1 ? "set is" : "sets are"}{" "}
+              saved on this phone and will sync when you’re back online. Finish
+              once they’ve synced.
+            </div>
+          )
         )}
         <div className={styles.content} inert={sheetOpen ? true : undefined}>
           <div className={styles.exerciseHeader}>
@@ -251,6 +298,7 @@ export function ActiveSessionScreen({
               onReplace={() => openSheet("replace")}
               pending={pending}
               sessionId={session.id}
+              waitingToSync={waitingToSync}
             />
           </div>
           <AnimatePresence custom={direction} initial={false} mode="wait">
@@ -371,6 +419,7 @@ function ExerciseOptions({
   onReplace,
   pending,
   sessionId,
+  waitingToSync,
 }: {
   completedSets: number;
   exercise: ActiveExercise;
@@ -379,6 +428,7 @@ function ExerciseOptions({
   onReplace: () => void;
   pending: boolean;
   sessionId: string;
+  waitingToSync: number;
 }) {
   const canChange = !exercise.sets.some((set) => set.status === "completed");
   const menuRef = useDismissibleDetails();
@@ -424,12 +474,17 @@ function ExerciseOptions({
         <hr />
         <strong>This workout</strong>
         <p>Stop now without saving it to your history.</p>
+        {/* The server can't see unsynced sets, so discarding now would delete
+            the workout outright and orphan them on this phone. */}
         <DiscardWorkoutButton
           className={styles.discardAction}
           completedSets={completedSets}
-          disabled={pending}
+          disabled={pending || waitingToSync > 0}
           sessionId={sessionId}
         />
+        {waitingToSync > 0 && (
+          <small>Wait for your saved sets to sync before discarding.</small>
+        )}
       </div>
     </details>
   );

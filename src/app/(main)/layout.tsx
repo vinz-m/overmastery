@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 import { AppHeader } from "@/features/navigation/app-header";
 import { PrimaryNav } from "@/features/navigation/primary-nav";
 import { DeviceTimeZoneSync } from "@/features/profile/device-time-zone-sync";
-import { expireStaleSession } from "@/features/sessions/expire-session";
+import { closeIdleSession } from "@/features/sessions/idle-session";
 import { requireUser } from "@/lib/auth/session";
-import { createClient } from "@/lib/supabase/server";
 
 import styles from "@/features/navigation/app-shell.module.css";
 
@@ -15,11 +14,10 @@ export default async function MainLayout({
   children: ReactNode;
 }) {
   const user = await requireUser();
-  const supabase = await createClient();
 
   // This route-group layout persists while the user moves between primary tabs,
-  // so the stale-session check runs on app entry instead of blocking every tab.
-  await expireStaleSession(supabase, user.id);
+  // so the idle-session check runs on app entry instead of blocking every tab.
+  await closeIdleSession(user.id);
 
   const accountLabel = user.displayName || user.email?.split("@")[0] || "You";
 

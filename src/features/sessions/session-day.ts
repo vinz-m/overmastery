@@ -21,18 +21,33 @@ export function nextSessionDay(startedAt: string, timeZone: string): string {
 }
 
 /**
- * How long a workout stays open before it's closed automatically. Long enough
- * for any real session, including one that runs past midnight, while still
- * closing a workout that was started and forgotten.
+ * A workout with no set logged for this long is closed automatically. Measured
+ * from the last logged set, not the start, so a long session is never cut off
+ * while a workout left open after its last set closes within hours. Long
+ * enough for any real rest or break between exercises.
  */
-export const sessionLifetimeMs = 6 * 60 * 60 * 1000;
+export const sessionIdleLimitMs = 4 * 60 * 60 * 1000;
 
-export function sessionExpiresAt(startedAt: string): string {
-  const start = new Date(startedAt).getTime();
-  if (!Number.isFinite(start)) throw new Error("Invalid session start time.");
-  return new Date(start + sessionLifetimeMs).toISOString();
+/** When the session last saw activity: its latest logged set, or its start. */
+export function lastActivityAt(
+  startedAt: string,
+  completedAts: readonly (string | null)[],
+): string {
+  let latest = new Date(startedAt).getTime();
+  if (!Number.isFinite(latest)) throw new Error("Invalid session start time.");
+  for (const completedAt of completedAts) {
+    const time = completedAt ? new Date(completedAt).getTime() : NaN;
+    if (time > latest) latest = time;
+  }
+  return new Date(latest).toISOString();
 }
 
-export function isSessionExpired(startedAt: string, now = new Date()) {
-  return now.getTime() >= new Date(sessionExpiresAt(startedAt)).getTime();
+export function sessionExpiresAt(lastActivity: string): string {
+  const last = new Date(lastActivity).getTime();
+  if (!Number.isFinite(last)) throw new Error("Invalid session activity time.");
+  return new Date(last + sessionIdleLimitMs).toISOString();
+}
+
+export function isSessionExpired(lastActivity: string, now = new Date()) {
+  return now.getTime() >= new Date(sessionExpiresAt(lastActivity)).getTime();
 }

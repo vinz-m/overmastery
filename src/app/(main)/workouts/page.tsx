@@ -3,6 +3,7 @@ import {
   getExerciseCatalog,
   getWorkoutOverview,
 } from "@/features/workouts/data";
+import { closeIdleSession } from "@/features/sessions/idle-session";
 import { WorkoutHome } from "@/features/workouts/home";
 import { requireUser, requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +21,7 @@ export default async function WorkoutsPage({
   const [user, params, overview, catalog, archivedCatalog] = await Promise.all([
     requireUser(),
     searchParams,
-    getWorkoutOverview(supabase),
+    closeIdleSession(userId).then(() => getWorkoutOverview(supabase)),
     getExerciseCatalog(supabase, userId),
     getArchivedCustomExercises(supabase, userId),
   ]);

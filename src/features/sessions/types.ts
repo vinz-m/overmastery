@@ -52,3 +52,13 @@ export type SessionMutationResult = {
   message?: string;
   ok: boolean;
 };
+
+export type CompleteSetInput = {
+  loadKg: number | null;
+  loadUnit: UnitSystem | null;
+  reps: number;
+  sessionId: string;
+  setId: string;
+  /** When the set was logged on the device, which may be well before it syncs. */
+  completedAt?: string;
+};

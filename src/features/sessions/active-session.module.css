@@ -90,6 +90,17 @@
   font-size: 13px;
   line-height: 1.45;
 }
+.bannerAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .content {
   padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
 }
@@ -216,7 +227,8 @@
   border: 0;
   border-top: 1px solid var(--border);
 }
-.exerciseMenu .discardAction {
+.exerciseMenu .discardAction,
+.emptyDiscard {
   width: 100%;
   min-height: 44px;
   margin-top: 8px;
