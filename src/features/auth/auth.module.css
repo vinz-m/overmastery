@@ -96,6 +96,27 @@
   gap: 12px;
 }
 
+.hasAction {
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+}
+
+.hasAction > * {
+  grid-column: 1 / -1;
+}
+
+.hasAction > .fieldLabel {
+  grid-row: 1;
+  grid-column: 1;
+  align-self: baseline;
+}
+
+.hasAction > .fieldAction {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: baseline;
+}
+
 .fieldLabel label {
   font-size: 13px;
   font-weight: 600;

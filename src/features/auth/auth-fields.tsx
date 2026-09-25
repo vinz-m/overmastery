@@ -130,13 +130,19 @@ function FieldFrame({
     [hintDescribes ? hintId : undefined, error ? errorId : undefined]
       .filter(Boolean)
       .join(" ") || undefined;
+  const action = hint && !hintDescribes;
   return (
-    <div className={styles.field}>
+    <div
+      className={action ? `${styles.field} ${styles.hasAction}` : styles.field}
+    >
       <div className={styles.fieldLabel}>
         <label htmlFor={inputId}>{label}</label>
-        {hint && (hintDescribes ? <small id={hintId}>{hint}</small> : hint)}
+        {hintDescribes && <small id={hintId}>{hint}</small>}
       </div>
       {children(describedBy)}
+      {/* After the input in the DOM so Tab reaches the field before the link;
+          CSS places it back beside the label. */}
+      {action && <div className={styles.fieldAction}>{hint}</div>}
       {error && (
         <span className={styles.fieldError} id={errorId}>
           {error}
