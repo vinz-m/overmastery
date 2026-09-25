@@ -177,7 +177,10 @@ export async function getWorkoutOverview(supabase: Client) {
   ]);
 
   if (error || activeError || historyError) {
-    throw new Error("Workouts could not be loaded.");
+    // Keep the Supabase error so the server log shows which query failed and why.
+    throw new Error("Workouts could not be loaded.", {
+      cause: error ?? activeError ?? historyError,
+    });
   }
 
   const activeSession: HomeActiveSession | undefined = activeData
