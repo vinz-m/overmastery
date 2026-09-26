@@ -15,14 +15,14 @@ export function sessionSummaryLead({
 
   if (baselines > 0) {
     return {
-      headline: "Baseline recorded. Now you have something to beat.",
-      label: `${baselines === 1 ? "exercise baseline" : "exercise baselines"} recorded`,
+      headline: "Now you have a number to beat next time.",
+      label: `${baselines === 1 ? "exercise" : "exercises"} logged for the first time`,
       metric: baselines,
     };
   }
 
   return {
-    headline: "Session recorded. Keep building.",
+    headline: "Workout saved. Keep building.",
     label: "exercises improved since last time",
     metric: 0,
   };

@@ -41,7 +41,7 @@ import {
 } from "@/features/exercises/exercise-filter";
 import { useDismissibleDetails } from "@/features/ui/use-dismissible-details";
 import { trackingLabel } from "@/features/workouts/tracking";
-import { formatSetLoad } from "./performance";
+import { formatSetLoad, loadLabel } from "./performance";
 import {
   canAddExtraSet,
   planOutcomeLabel,
@@ -49,6 +49,7 @@ import {
   removalActionLabel,
 } from "./set-policy";
 import { prefillForSet } from "./set-prefill";
+import { useCurrentExercise } from "./current-exercise";
 import { DiscardWorkoutButton } from "./discard-workout-button";
 import { applyPendingSets, useOfflineSetQueue } from "./offline-set-queue";
 import styles from "./active-session.module.css";
@@ -72,10 +73,12 @@ const offlineMessage =
 
 export function ActiveSessionScreen({
   catalog,
+  rememberedExerciseId,
   session: serverSession,
   unitSystem,
 }: {
   catalog: SwapExerciseOption[];
+  rememberedExerciseId: string | null;
   session: ActiveSession;
   unitSystem: UnitSystem;
 }) {
@@ -89,10 +92,8 @@ export function ActiveSessionScreen({
   const [outdated, setOutdated] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const [currentExerciseId, setCurrentExerciseId] = useState(
-    session.exercises.find((exercise) => exercise.status !== "skipped")?.id ??
-      session.exercises[0]?.id,
-  );
+  const [currentExerciseId, setCurrentExerciseId] =
+    useCurrentExercise(rememberedExerciseId);
   const [sheet, setSheet] = useState<"exercises" | "replace" | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const sheetOpen = sheet !== null;
@@ -128,8 +129,11 @@ export function ActiveSessionScreen({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [sheetOpen]);
 
+  // The remembered exercise may belong to an earlier workout.
   const currentExercise =
     session.exercises.find((exercise) => exercise.id === currentExerciseId) ??
+    session.exercises.find(hasOpenSets) ??
+    session.exercises.find((exercise) => exercise.status !== "skipped") ??
     session.exercises[0];
   const completedSets = session.exercises.reduce(
     (count, exercise) =>
@@ -209,10 +213,15 @@ export function ActiveSessionScreen({
   const currentIndex = session.exercises.findIndex(
     (exercise) => exercise.id === currentExercise.id,
   );
+  // Only exercises still waiting on sets, so the last one done doesn't loop
+  // back to the start of the list.
   const nextExercise = [
     ...session.exercises.slice(currentIndex + 1),
     ...session.exercises.slice(0, currentIndex),
-  ].find((exercise) => exercise.status !== "skipped");
+  ].find(hasOpenSets);
+  const allSetsLogged =
+    completedSets > 0 && !session.exercises.some(hasOpenSets);
+  const finish = () => mutate(() => finishSession(session.id));
   const showExercise = (exerciseId: string) => {
     const target = session.exercises.find(
       (exercise) => exercise.id === exerciseId,
@@ -250,7 +259,7 @@ export function ActiveSessionScreen({
           </div>
           <button
             disabled={pending || completedSets === 0 || waitingToSync > 0}
-            onClick={() => mutate(() => finishSession(session.id))}
+            onClick={finish}
             type="button"
           >
             Finish
@@ -324,11 +333,20 @@ export function ActiveSessionScreen({
                 <CaretDownIcon aria-hidden="true" size={20} weight="bold" />
               </button>
               <FocusedSet
+                allSetsLogged={allSetsLogged}
+                completedSets={completedSets}
                 exercise={currentExercise}
                 logSet={logSet}
+                nextExercise={nextExercise}
+                onFinish={finish}
+                onNext={(exerciseId) => {
+                  showExercise(exerciseId);
+                  scrollToPageTop();
+                }}
                 pending={pending}
                 sessionId={session.id}
                 unitSystem={unitSystem}
+                waitingToSync={waitingToSync}
               />
               <SetProgress
                 exercise={currentExercise}
@@ -339,7 +357,8 @@ export function ActiveSessionScreen({
               />
             </motion.div>
           </AnimatePresence>
-          {nextExercise && nextExercise.id !== currentExercise.id && (
+          {/* Once this exercise is done its card offers the next step instead. */}
+          {nextExercise && hasOpenSets(currentExercise) && (
             <button
               className={styles.upNext}
               onClick={() => {
@@ -491,42 +510,89 @@ function ExerciseOptions({
 }
 
 function FocusedSet({
+  allSetsLogged,
+  completedSets,
   exercise,
   logSet,
+  nextExercise,
+  onFinish,
+  onNext,
   pending,
   sessionId,
   unitSystem,
+  waitingToSync,
 }: {
+  allSetsLogged: boolean;
+  completedSets: number;
   exercise: ActiveExercise;
   logSet: LogSet;
+  nextExercise: ActiveExercise | undefined;
+  onFinish: () => void;
+  onNext: (exerciseId: string) => void;
   pending: boolean;
   sessionId: string;
   unitSystem: UnitSystem;
+  waitingToSync: number;
 }) {
   const activeSet = exercise.sets.find((set) => set.status === "planned");
   const completedCount = exercise.sets.filter(
     (set) => set.status === "completed",
   ).length;
   const plan = projectSetPlan(exercise.sets, exercise.targetSets);
+  if (allSetsLogged)
+    return (
+      <div className={styles.statusCard} role="status">
+        <span>Workout complete</span>
+        <strong>
+          {completedSets} {completedSets === 1 ? "set" : "sets"} logged
+        </strong>
+        <p>Finish to save it and see how today compares.</p>
+        {/* Unsynced sets would be missing from the summary. */}
+        <button
+          className={styles.completeSet}
+          disabled={pending || waitingToSync > 0}
+          onClick={onFinish}
+          type="button"
+        >
+          Finish workout
+        </button>
+        {waitingToSync > 0 && (
+          <p>Your last sets are still syncing. Finish once they’re saved.</p>
+        )}
+      </div>
+    );
+  const nextAction = nextExercise && (
+    <button
+      className={styles.completeSet}
+      onClick={() => onNext(nextExercise.id)}
+      type="button"
+    >
+      Next: {nextExercise.name}
+    </button>
+  );
   if (exercise.status === "skipped")
     return (
       <div className={styles.statusCard}>
         <span>Skipped today</span>
         <p>Choose another exercise to continue training.</p>
+        {nextAction}
       </div>
     );
   if (!activeSet)
     return (
-      <div className={styles.statusCard}>
+      <div className={styles.statusCard} role="status">
         <span>Exercise complete</span>
         <strong>{planOutcomeLabel(plan)}</strong>
+        {nextAction}
       </div>
     );
   return (
     <ActiveSetEditor
       completedCount={completedCount}
       exercise={exercise}
-      key={activeSet.id}
+      // A replaced exercise keeps its set ids, so key by the exercise too or
+      // the inputs keep the old exercise's values.
+      key={`${exercise.exerciseId}:${activeSet.id}`}
       logSet={logSet}
       pending={pending}
       sessionId={sessionId}
@@ -711,7 +777,7 @@ function SetProgress({
           .filter((slot) => slot.synthetic)
           .map((slot) => (
             <button
-              aria-label={`Restore planned set ${slot.position + 1}`}
+              aria-label={`Restore set ${slot.position + 1}`}
               className={styles.progressSkipped}
               disabled={pending}
               key={`missing-${slot.position}`}
@@ -988,16 +1054,18 @@ function ReplacementList({
     </>
   );
 }
-function loadLabel(type: ActiveExercise["trackingType"]) {
-  if (type === "assistance_reps") return "Assistance";
-  if (type === "bodyweight_reps") return "Added weight";
-  return "Weight";
+function hasOpenSets(exercise: ActiveExercise) {
+  return (
+    exercise.status !== "skipped" &&
+    exercise.sets.some((set) => set.status === "planned")
+  );
 }
 function previousSetLabel(
   exercise: ActiveExercise,
   position: number,
   unitSystem: UnitSystem,
 ) {
+  if (exercise.previous.reps.length === 0) return "none yet";
   const reps = exercise.previous.reps[position];
   const load = formatSetLoad(
     exercise.trackingType,

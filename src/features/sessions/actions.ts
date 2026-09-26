@@ -7,7 +7,7 @@ import { requireUserId } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { expireStaleSession } from "./expire-session";
-import type { SessionMutationResult } from "./types";
+import type { CompleteSetInput, SessionMutationResult } from "./types";
 import { canAddExtraSet } from "./set-policy";
 
 const uuidPattern =
@@ -25,7 +25,9 @@ export async function startWorkout(
   void previousState;
   void formData;
   if (!uuidPattern.test(workoutId)) {
-    return { message: "This workout is invalid. Refresh and try again." };
+    return {
+      message: "This workout couldn’t be found. Refresh and try again.",
+    };
   }
 
   const userId = await requireUserId();
@@ -318,7 +320,7 @@ export async function removeWorkingSet(input: {
   if (error) {
     return failure(
       isPlanned
-        ? "This planned set could not be skipped."
+        ? "This set could not be skipped."
         : "This extra set could not be removed.",
     );
   }
@@ -331,7 +333,7 @@ export async function restoreSkippedSet(input: {
   setId: string;
 }): Promise<SessionMutationResult> {
   if (!validSessionInput(input.sessionId, input.setId)) {
-    return failure("This planned set could not be restored.");
+    return failure("This set could not be restored.");
   }
 
   await requireUserId();
@@ -349,7 +351,7 @@ export async function restoreSkippedSet(input: {
     existing.session_exercises?.training_session_id !== input.sessionId ||
     existing.session_exercises.training_sessions?.status !== "active"
   ) {
-    return failure("This planned set could not be restored.");
+    return failure("This set could not be restored.");
   }
 
   const { error } = await supabase
@@ -357,7 +359,7 @@ export async function restoreSkippedSet(input: {
     .update({ status: "planned" })
     .eq("id", existing.id)
     .eq("status", "skipped");
-  if (error) return failure("This planned set could not be restored.");
+  if (error) return failure("This set could not be restored.");
 
   return succeeded();
 }
@@ -372,7 +374,7 @@ export async function restoreMissingPlannedSet(input: {
     !Number.isInteger(input.position) ||
     input.position < 0
   ) {
-    return failure("This planned set could not be restored.");
+    return failure("This set could not be restored.");
   }
 
   await requireUserId();
@@ -399,7 +401,7 @@ export async function restoreMissingPlannedSet(input: {
     input.position >= source.target_sets ||
     exercise.exercise_sets.some((set) => set.position === input.position)
   ) {
-    return failure("This planned set could not be restored.");
+    return failure("This set could not be restored.");
   }
 
   const { error } = await supabase.from("exercise_sets").insert({
@@ -407,7 +409,7 @@ export async function restoreMissingPlannedSet(input: {
     position: input.position,
     session_exercise_id: exercise.id,
   });
-  if (error) return failure("This planned set could not be restored.");
+  if (error) return failure("This set could not be restored.");
 
   return succeeded();
 }
@@ -498,7 +500,7 @@ export async function swapExercise(input: {
     return failure("This workout is no longer active.");
   }
   if (current.exercise_sets.some((set) => set.status === "completed")) {
-    return failure("Swap this exercise before logging a set.");
+    return failure("Reopen logged sets before replacing this exercise.");
   }
 
   const { error: updateError } = await supabase
@@ -518,7 +520,8 @@ export async function swapExercise(input: {
 export async function finishSession(
   sessionId: string,
 ): Promise<SessionMutationResult> {
-  if (!uuidPattern.test(sessionId)) return failure("This workout is invalid.");
+  if (!uuidPattern.test(sessionId))
+    return failure("This workout couldn’t be found. Refresh and try again.");
 
   await requireUserId();
   const supabase = await createClient();
@@ -537,6 +540,102 @@ export async function finishSession(
   redirect(`/sessions/${sessionId}/summary`);
 }
 
+/**
+ * Fixes sets in a finished workout, e.g. a load typed in lb while the input
+ * was set to kg. Only values change: which sets were done stays as recorded.
+ */
+export async function correctCompletedSets(input: {
+  sessionId: string;
+  sets: SetCorrection[];
+}): Promise<SessionMutationResult> {
+  if (
+    !uuidPattern.test(input.sessionId) ||
+    !Array.isArray(input.sets) ||
+    input.sets.length === 0 ||
+    input.sets.length > 200 ||
+    !input.sets.every(
+      (set) =>
+        uuidPattern.test(set.setId) &&
+        Number.isInteger(set.reps) &&
+        set.reps >= 0 &&
+        set.reps <= 1000 &&
+        (set.loadKg === null
+          ? set.loadUnit === null
+          : Number.isFinite(set.loadKg) &&
+            set.loadKg >= 0 &&
+            set.loadKg <= 10000 &&
+            // null keeps a set on the profile's default unit.
+            (set.loadUnit === null ||
+              set.loadUnit === "metric" ||
+              set.loadUnit === "imperial")),
+    )
+  ) {
+    return failure("Enter a valid weight and reps for every set.");
+  }
+
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data: sets } = await supabase
+    .from("exercise_sets")
+    .select(
+      "id, status, session_exercises!inner ( tracking_type, training_session_id, training_sessions!inner ( status, user_id ) )",
+    )
+    .in(
+      "id",
+      input.sets.map((set) => set.setId),
+    );
+  const stored = new Map((sets ?? []).map((set) => [set.id, set]));
+  const corrections = input.sets.map((correction) => ({
+    correction,
+    stored: stored.get(correction.setId),
+  }));
+  if (
+    corrections.some(
+      ({ stored }) =>
+        !stored ||
+        stored.status !== "completed" ||
+        stored.session_exercises.training_session_id !== input.sessionId ||
+        stored.session_exercises.training_sessions.status !== "completed" ||
+        stored.session_exercises.training_sessions.user_id !== userId,
+    )
+  ) {
+    return failure("This workout can no longer be edited.");
+  }
+
+  for (const { correction, stored } of corrections) {
+    const trackingType = stored!.session_exercises.tracking_type;
+    // Added weight on a bodyweight exercise is optional; everything else needs a load.
+    if (correction.loadKg === null && trackingType !== "bodyweight_reps")
+      return failure("Enter a weight for every set.");
+  }
+
+  const results = await Promise.all(
+    corrections.map(({ correction, stored }) => {
+      const trackingType = stored!.session_exercises.tracking_type;
+      const loadKg =
+        trackingType === "bodyweight_reps" && correction.loadKg === 0
+          ? null
+          : correction.loadKg;
+      return supabase
+        .from("exercise_sets")
+        .update({
+          assistance_kg: trackingType === "assistance_reps" ? loadKg : null,
+          entered_unit: loadKg === null ? null : correction.loadUnit,
+          reps: correction.reps,
+          weight_kg: trackingType === "assistance_reps" ? null : loadKg,
+        })
+        .eq("id", correction.setId)
+        .eq("status", "completed");
+    }),
+  );
+  if (results.some(({ error }) => error))
+    return failure("Your changes could not be saved. Try again.");
+
+  return succeeded();
+}
+
+export type SetCorrection = Omit<CompleteSetInput, "completedAt" | "sessionId">;
+
 export type DiscardSessionState = {
   message?: string;
 };
@@ -553,7 +652,9 @@ export async function discardSession(
   void previousState;
   void formData;
   if (!uuidPattern.test(sessionId))
-    return { message: "This workout is invalid." };
+    return {
+      message: "This workout couldn’t be found. Refresh and try again.",
+    };
 
   const userId = await requireUserId();
   const supabase = await createClient();
@@ -587,6 +688,43 @@ export async function discardSession(
 
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+export type DeleteSessionState = {
+  message?: string;
+};
+
+// For a finished workout that shouldn't exist, like a test or a duplicate.
+// Nothing refers to a session, its exercises and sets cascade, and progress
+// is derived on read, so removing it outright leaves nothing stale behind.
+export async function deleteSession(
+  sessionId: string,
+  previousState: DeleteSessionState,
+  formData: FormData,
+): Promise<DeleteSessionState> {
+  void previousState;
+  void formData;
+  if (!uuidPattern.test(sessionId))
+    return {
+      message: "This workout couldn’t be found. Refresh and try again.",
+    };
+
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .select("id");
+
+  if (error) return { message: "The workout could not be deleted. Try again." };
+  if (data.length === 0)
+    return { message: "This workout has already been deleted." };
+
+  revalidatePath("/", "layout");
+  redirect("/progress");
 }
 
 function validSessionInput(...values: string[]) {

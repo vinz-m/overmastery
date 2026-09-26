@@ -31,7 +31,7 @@ export default function Error({
       }
     >
       <p className={routeStateStyles.assurance} role="status">
-        Nothing was changed by this failed load.
+        Your data wasn’t changed.
       </p>
     </RouteState>
   );

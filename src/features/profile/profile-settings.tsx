@@ -108,9 +108,9 @@ export function ProfileSettings({
             />
           </Field>
           <div className={styles.field}>
-            <span>Weight display</span>
+            <span>Units</span>
             <SelectField
-              ariaLabel="Weight display"
+              ariaLabel="Units"
               defaultValue={unitSystem}
               name="unitSystem"
               options={unitOptions}
@@ -134,7 +134,7 @@ export function ProfileSettings({
             )}
           </div>
           <p className={styles.help}>
-            Choose the units you prefer. Your previous sessions will use them
+            Choose the units you prefer. Past workouts will show in these units
             too.
           </p>
           <ActionMessage state={profileState} />
@@ -148,12 +148,11 @@ export function ProfileSettings({
       <section className={styles.settingsSection}>
         <header>
           <span>Guidance</span>
-          <h2>Contextual tips</h2>
+          <h2>Tips</h2>
         </header>
         <form action={guidanceAction}>
           <p className={styles.help}>
-            Show dismissed onboarding tips again when you reach their relevant
-            screen.
+            Show hidden tips again on the screens where they appear.
           </p>
           <ActionMessage state={guidanceState} />
           <button
@@ -161,7 +160,7 @@ export function ProfileSettings({
             disabled={guidancePending}
             type="submit"
           >
-            {guidancePending ? "Resetting…" : "Restart guidance"}
+            {guidancePending ? "Resetting…" : "Show tips again"}
           </button>
         </form>
       </section>
@@ -196,8 +195,7 @@ export function ProfileSettings({
             />
           </Field>
           <p className={styles.help}>
-            Because you are already signed in, this change verifies your current
-            password and does not send email.
+            Enter your current password to confirm. No email is sent.
           </p>
           <ActionMessage state={passwordState} />
           <button

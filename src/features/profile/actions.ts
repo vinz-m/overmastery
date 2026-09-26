@@ -105,7 +105,8 @@ export async function resetGuidance(
   await requireUserId();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return { message: "Guidance could not be reset." };
+  if (error || !data.user)
+    return { message: "Tips couldn’t be reset. Try again." };
 
   const { error: updateError } = await supabase.auth.updateUser({
     data: {
@@ -113,7 +114,7 @@ export async function resetGuidance(
       overmastery_guidance: emptyGuidanceState,
     },
   });
-  if (updateError) return { message: "Guidance could not be reset." };
+  if (updateError) return { message: "Tips couldn’t be reset. Try again." };
 
   revalidatePath("/", "layout");
   redirect("/");

@@ -148,13 +148,13 @@ function Today({
         <ContextualTip
           body={
             activeSession
-              ? "Resume the session you already started. Your completed sets are waiting here."
+              ? "Pick up the workout you already started. Your completed sets are saved."
               : featured
-                ? "Start a saved workout here. Today keeps your next session and recent training close."
-                : "Create a workout template once, then return here whenever you are ready to train."
+                ? "Start a saved workout here, and see your recent training at a glance."
+                : "Create a workout once, then come back here whenever you’re ready to train."
           }
           guidanceKey="home.overview.v1"
-          title="Your next session starts here"
+          title="Your next workout starts here"
         />
       )}
 

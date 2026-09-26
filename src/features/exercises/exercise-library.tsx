@@ -82,7 +82,7 @@ export function ExerciseLibrary({
       <section className={styles.lead}>
         <p>Exercises</p>
         <h1>Exercises</h1>
-        <span>Browse the movements available when building a workout.</span>
+        <span>Browse the exercises you can add to a workout.</span>
       </section>
 
       <section className={styles.controls}>

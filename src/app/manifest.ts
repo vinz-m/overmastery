@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Overmastery",
     short_name: "Overmastery",
-    description: "Your plans, sessions, and progress. One step at a time.",
+    description: "Your workouts and progress, one step at a time.",
     start_url: "/",
     scope: "/",
     display: "standalone",

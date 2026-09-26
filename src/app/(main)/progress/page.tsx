@@ -9,14 +9,9 @@ export default async function ProgressPage() {
     requireUserId(),
     createClient(),
   ]);
-  const userPromise = requireUser();
-  const [user, { exercises, sessions }] = await Promise.all([
-    userPromise,
-    getProgressOverview(
-      supabase,
-      userId,
-      userPromise.then((user) => user.unitSystem),
-    ),
+  const [user, { exercises, recent, totals }] = await Promise.all([
+    requireUser(),
+    getProgressOverview(supabase, userId),
   ]);
 
   return (
@@ -24,7 +19,8 @@ export default async function ProgressPage() {
       <ProgressHome
         exercises={exercises}
         guidance={user.guidance}
-        sessions={sessions}
+        recent={recent}
+        totals={totals}
         unitSystem={user.unitSystem}
       />
     </PageTransition>

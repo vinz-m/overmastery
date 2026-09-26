@@ -777,3 +777,281 @@
 .timeline > a {
   grid-template-columns: 58px minmax(0, 1fr);
 }
+
+/* Session record: view weights in either unit, and correct logged sets. */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.recordToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0 20px 12px;
+}
+.unitSwitch {
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.unitSwitch label {
+  position: relative;
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--muted);
+  font: 600 13px var(--font-geist-sans);
+  cursor: pointer;
+}
+.unitSwitch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.unitSwitch label > span:last-child {
+  position: relative;
+  z-index: 1;
+}
+.unitSwitch label:has(input:checked) {
+  color: var(--foreground);
+}
+.unitSwitch label:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.unitSelection {
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: var(--accent-soft);
+}
+.recordEdit {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 600 14px var(--font-geist-sans);
+  cursor: pointer;
+}
+.recordEditor {
+  display: grid;
+  gap: 14px;
+  margin: 0 20px;
+}
+.recordHint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.recordExercise {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.recordExercise > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.recordExercise h3 {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.recordExercise .unitSwitch {
+  flex: none;
+}
+.recordSet {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 8px;
+}
+.recordSet > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* A number input with its unit ("kg", "reps") shown inside, on the right. */
+.recordField {
+  position: relative;
+  min-width: 0;
+}
+.recordField input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 44px 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font: 600 18px var(--font-geist-mono);
+}
+.recordField span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.recordError {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--negative-soft);
+  color: var(--negative);
+  font-size: 13px;
+}
+.recordActions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  background: var(--background);
+}
+.recordActions button {
+  min-height: 52px;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--foreground);
+  font-weight: 600;
+  cursor: pointer;
+}
+.recordActions button[type="submit"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.recordActions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.recordDelete {
+  width: calc(100% - 40px);
+  min-height: 48px;
+  margin: 28px 20px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--negative);
+  font: 600 14px var(--font-geist-sans);
+  cursor: pointer;
+}
+.recordDelete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* One line for a skipped exercise: its name and a quiet tag, no results. */
+.detailResults > .resultSkipped {
+  min-height: 60px;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+.detailResults > .resultSkipped > span {
+  align-self: center;
+  padding-top: 0;
+}
+.detailResults > .resultSkipped h2 {
+  color: var(--muted);
+  font-weight: 500;
+}
+.detailResults > .resultSkipped > strong {
+  grid-column: auto;
+  justify-self: end;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Exercise history, grouped by muscle like the exercise library. */
+.exerciseGroup + .exerciseGroup {
+  margin-top: 18px;
+}
+.exerciseGroup h3 {
+  margin: 0 0 8px;
+  padding: 0 8px;
+  color: var(--muted);
+  font: 650 11px var(--font-geist-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+/* A link to the full list, directly under a shortened one. */
+.seeAll {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--accent);
+  font: 600 14px var(--font-geist-sans);
+  text-decoration: none;
+}
+.seeAll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Full workout history: one list per month. */
+.monthGroup {
+  margin: 0 20px 24px;
+}
+.monthGroup h2 {
+  margin: 0 0 10px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.historyEnd {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0 20px;
+  padding: 4px 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.historyEnd [role="alert"] {
+  color: var(--negative);
+}
+.historyEnd button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--foreground);
+  font: 600 14px var(--font-geist-sans);
+  cursor: pointer;
+}
+.historyEnd button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -14,9 +14,13 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { UnitSystem } from "@/lib/units";
 
 import type {
+  ExerciseSummary,
   ExerciseTimeline,
   HistoryExercise,
   HistorySession,
+  TrainingTotals,
+  WorkoutHistoryPage,
+  WorkoutListItem,
 } from "./types";
 
 type Client = SupabaseClient<Database>;
@@ -30,6 +34,7 @@ type HistoryRow = {
     exercise_sets: Array<{
       assistance_kg: number | null;
       entered_unit: UnitSystem | null;
+      id: string;
       planned_reps: number | null;
       position: number;
       reps: number | null;
@@ -62,6 +67,7 @@ const historySelection = `
     exercise_sets (
       assistance_kg,
       entered_unit,
+      id,
       planned_reps,
       position,
       reps,
@@ -71,35 +77,157 @@ const historySelection = `
   )
 `;
 
-// unitSystem arrives as a promise so the history query can start before the
-// profile read finishes; it is only needed once rows are being shaped.
-export async function getProgressOverview(
+/** How many recent workouts the Progress tab lists before "See all". */
+export const recentWorkoutCount = 10;
+/** How many workouts each page of the full history loads. */
+export const workoutPageSize = 20;
+
+export async function getProgressOverview(supabase: Client, userId: string) {
+  const [recent, totals, exercises] = await Promise.all([
+    getWorkoutHistoryPage(supabase, userId, { limit: recentWorkoutCount }),
+    getTrainingTotals(supabase, userId),
+    getExerciseSummaries(supabase),
+  ]);
+  return { exercises, recent, totals };
+}
+
+/** Finished workouts, newest first, a page at a time. */
+export async function getWorkoutHistoryPage(
   supabase: Client,
   userId: string,
-  unitSystem: Promise<UnitSystem>,
-) {
-  const [{ data, error }, units] = await Promise.all([
-    supabase
-      .from("training_sessions")
-      .select(historySelection)
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("ended_at", { ascending: false })
-      .limit(24),
-    unitSystem,
-  ]);
-
+  { before, limit }: { before?: string; limit: number },
+): Promise<WorkoutHistoryPage> {
+  let query = supabase
+    .from("training_sessions")
+    .select(historySelection)
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    .order("ended_at", { ascending: false })
+    // One extra row says whether an older page exists.
+    .limit(limit + 1);
+  if (before) query = query.lt("ended_at", before);
+  const { data, error } = await query;
   if (error) throw new Error("Training history could not be loaded.");
 
-  const sessions = buildHistory((data ?? []) as HistoryRow[], units);
-  const exerciseIndex = buildExerciseIndex(sessions);
+  const rows = (data ?? []) as HistoryRow[];
+  const page = rows.slice(0, limit);
+  const oldest = page.at(-1);
+  // Each workout is compared with the time before it, so start from how each
+  // exercise stood before this page; otherwise the oldest workouts on it could
+  // never show an improvement.
+  const previous = oldest?.ended_at
+    ? await getPerformancesBefore(supabase, page, oldest.ended_at)
+    : undefined;
+  // Only the comparison state is kept, which doesn't depend on the unit.
+  const workouts = buildHistory(page, "metric", previous).map(
+    (session): WorkoutListItem => ({
+      completedSets: session.completedSets,
+      doneExercises: session.exercises.filter(
+        (exercise) => exercise.completedSets > 0,
+      ).length,
+      endedAt: session.endedAt,
+      id: session.id,
+      improvedExercises: session.improvedExercises,
+      templateName: session.templateName,
+    }),
+  );
 
   return {
-    exercises: [...exerciseIndex.values()].sort((left, right) =>
-      right.exposures[0].endedAt.localeCompare(left.exposures[0].endedAt),
-    ),
-    sessions,
+    nextCursor:
+      rows.length > limit && oldest?.ended_at ? oldest.ended_at : null,
+    workouts,
   };
+}
+
+async function getPerformancesBefore(
+  supabase: Client,
+  rows: HistoryRow[],
+  endedBefore: string,
+) {
+  const exerciseIds = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.session_exercises
+          .map((exercise) => exercise.exercise_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ),
+  ];
+  if (exerciseIds.length === 0) return new Map<string, PreviousPerformance>();
+  const { data, error } = await supabase.rpc("latest_exercise_performances", {
+    p_ended_before: endedBefore,
+    p_exercise_ids: exerciseIds,
+  });
+  if (error) throw new Error("Training history could not be loaded.");
+  return toPerformances(data ?? []);
+}
+
+/** All-time counts, not just what's listed. */
+export async function getTrainingTotals(
+  supabase: Client,
+  userId: string,
+): Promise<TrainingTotals> {
+  const [workouts, sets] = await Promise.all([
+    supabase
+      .from("training_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "completed"),
+    supabase
+      .from("exercise_sets")
+      .select(
+        "id, session_exercises!inner ( training_sessions!inner ( status, user_id ) )",
+        { count: "exact", head: true },
+      )
+      .eq("status", "completed")
+      .eq("session_exercises.training_sessions.status", "completed")
+      .eq("session_exercises.training_sessions.user_id", userId),
+  ]);
+  if (workouts.error || sets.error)
+    throw new Error("Training history could not be loaded.");
+  return { sets: sets.count ?? 0, workouts: workouts.count ?? 0 };
+}
+
+/** Every exercise ever completed, most recently done first. */
+async function getExerciseSummaries(
+  supabase: Client,
+): Promise<ExerciseSummary[]> {
+  const { data, error } = await supabase.rpc("exercise_history_summaries");
+  if (error) throw new Error("Exercise history could not be loaded.");
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const { data: latestRows, error: latestError } = await supabase.rpc(
+    "latest_exercise_performances",
+    { p_exercise_ids: rows.map((row) => row.exercise_id) },
+  );
+  if (latestError) throw new Error("Exercise history could not be loaded.");
+  const latest = toPerformances(latestRows ?? []);
+
+  return rows.map((row) => ({
+    id: row.exercise_id,
+    isCustom: row.is_custom,
+    lastDoneAt: row.last_ended_at,
+    latest: latest.get(row.exercise_id) ?? null,
+    name: row.exercise_name,
+    primaryMuscle:
+      row.primary_muscle_name && row.primary_muscle_slug
+        ? { name: row.primary_muscle_name, slug: row.primary_muscle_slug }
+        : undefined,
+    timesDone: row.exposure_count,
+    trackingType: row.tracking_type,
+  }));
+}
+
+function toPerformances(
+  rows: Database["public"]["Functions"]["latest_exercise_performances"]["Returns"],
+) {
+  return new Map<string, PreviousPerformance>(
+    rows.map((row) => [
+      row.exercise_id,
+      { loadKg: row.load_kg, reps: row.reps, unit: row.load_unit },
+    ]),
+  );
 }
 
 export async function getHistorySession(
@@ -116,33 +244,45 @@ export async function getHistorySession(
     .eq("status", "completed")
     .maybeSingle();
 
-  if (targetError) throw new Error("Session history could not be loaded.");
+  if (targetError) throw new Error("This workout couldn’t be loaded.");
   const row = target as HistoryRow | null;
   if (!row?.ended_at) return null;
 
   const exerciseIds = row.session_exercises
     .map((exercise) => exercise.exercise_id)
     .filter((id): id is string => Boolean(id));
-  const [{ data: previousRows, error }, units] = await Promise.all([
+  const noRows = { data: [], error: null };
+  const [
+    { data: previousRows, error },
+    { data: latestRows, error: latestError },
+    units,
+  ] = await Promise.all([
     exerciseIds.length > 0
       ? supabase.rpc("latest_exercise_performances", {
           p_ended_before: row.ended_at,
           p_exclude_session_id: row.id,
           p_exercise_ids: exerciseIds,
         })
-      : { data: [], error: null },
+      : noRows,
+    // The unit each exercise was last logged in, which it reads in everywhere.
+    exerciseIds.length > 0
+      ? supabase.rpc("latest_exercise_performances", {
+          p_exercise_ids: exerciseIds,
+        })
+      : noRows,
     unitSystem,
   ]);
 
-  if (error) throw new Error("Session history could not be loaded.");
-  const previous = new Map<string, PreviousPerformance>(
-    (previousRows ?? []).map((performance) => [
-      performance.exercise_id,
-      { loadKg: performance.load_kg, reps: performance.reps },
+  if (error || latestError) throw new Error("This workout couldn’t be loaded.");
+  const previous = toPerformances(previousRows ?? []);
+  const displayUnits = new Map(
+    (latestRows ?? []).map((latest) => [
+      latest.exercise_id,
+      latest.load_unit ?? units,
     ]),
   );
 
-  return buildHistory([row], units, previous)[0] ?? null;
+  return buildHistory([row], units, previous, displayUnits)[0] ?? null;
 }
 
 export async function getExerciseTimeline(
@@ -167,6 +307,7 @@ export async function getExerciseTimeline(
         exercise_sets (
           assistance_kg,
           entered_unit,
+          id,
           planned_reps,
           position,
           reps,
@@ -196,17 +337,43 @@ export async function getExerciseTimeline(
     }
   }
 
+  const rows = [...sessions.values()];
   return (
-    buildExerciseIndex(buildHistory([...sessions.values()], units)).get(
-      exerciseId,
-    ) ?? null
+    buildExerciseIndex(
+      buildHistory(rows, units, undefined, latestEnteredUnits(rows, units)),
+    ).get(exerciseId) ?? null
   );
+}
+
+/**
+ * The unit each exercise was last logged in. An exercise reads in that unit
+ * everywhere, so a lb machine shows its lb numbers across its whole history.
+ */
+function latestEnteredUnits(rows: HistoryRow[], unitSystem: UnitSystem) {
+  const units = new Map<string, UnitSystem>();
+  const newestFirst = [...rows].sort((left, right) =>
+    (right.ended_at ?? right.started_at).localeCompare(
+      left.ended_at ?? left.started_at,
+    ),
+  );
+  for (const row of newestFirst) {
+    for (const exercise of row.session_exercises) {
+      if (!exercise.exercise_id || units.has(exercise.exercise_id)) continue;
+      const first = exercise.exercise_sets
+        .filter((set) => set.status === "completed" && set.reps !== null)
+        .sort((left, right) => left.position - right.position)[0];
+      if (first)
+        units.set(exercise.exercise_id, first.entered_unit ?? unitSystem);
+    }
+  }
+  return units;
 }
 
 function buildHistory(
   rows: HistoryRow[],
   unitSystem: UnitSystem,
   previousByExercise = new Map<string, PreviousPerformance>(),
+  displayUnits = new Map<string, UnitSystem>(),
 ): HistorySession[] {
   const chronological = [...rows].sort((left, right) =>
     (left.ended_at ?? left.started_at).localeCompare(
@@ -220,29 +387,40 @@ function buildHistory(
       .map((exercise): HistoryExercise => {
         const completed = exercise.exercise_sets
           .filter((set) => set.status === "completed" && set.reps !== null)
-          .sort((left, right) => left.position - right.position);
+          .sort((left, right) => left.position - right.position)
+          .map((set) => ({
+            id: set.id,
+            loadKg:
+              exercise.tracking_type === "assistance_reps"
+                ? set.assistance_kg
+                : set.weight_kg,
+            planned_reps: set.planned_reps,
+            position: set.position,
+            reps: set.reps!,
+            unit: set.entered_unit,
+          }));
         const current: PreviousPerformance | null = completed.length
           ? {
-              loadKg:
-                exercise.tracking_type === "assistance_reps"
-                  ? completed[0].assistance_kg
-                  : completed[0].weight_kg,
-              reps: completed.map((set) => set.reps!),
-              unit: completed[0].entered_unit,
+              loadKg: completed[0].loadKg,
+              reps: completed.map((set) => set.reps),
+              unit: completed[0].unit,
             }
           : null;
         const previous = exercise.exercise_id
           ? previousByExercise.get(exercise.exercise_id)
           : undefined;
+        const displayUnit =
+          (exercise.exercise_id && displayUnits.get(exercise.exercise_id)) ||
+          unitSystem;
         const comparison: PerformanceComparison = previous
           ? comparePerformance(
               current,
               previous,
               exercise.tracking_type,
-              current?.unit ?? unitSystem,
+              displayUnit,
             )
           : current
-            ? { label: "Baseline recorded", state: "new" }
+            ? { label: "First time logged", state: "new" }
             : { label: "No completed sets", state: "new" };
         const storedPlannedSets = exercise.exercise_sets.filter(
           (set) => set.planned_reps !== null,
@@ -261,6 +439,7 @@ function buildHistory(
         return {
           comparison,
           completedSets: completed.length,
+          displayUnit,
           extraCompletedSets: completed.length - plannedCompletedSets,
           exerciseId: exercise.exercise_id,
           id: exercise.id,
@@ -269,6 +448,13 @@ function buildHistory(
           plannedSets,
           plannedCompletedSets,
           reps: current?.reps ?? [],
+          sets: completed.map(({ id, loadKg, position, reps, unit }) => ({
+            id,
+            loadKg,
+            position,
+            reps,
+            unit,
+          })),
           skippedSets: exercise.exercise_sets.filter(
             (set) => set.status === "skipped" && set.planned_reps !== null,
           ).length,
@@ -289,7 +475,7 @@ function buildHistory(
         (exercise) => exercise.comparison.state === "improved",
       ).length,
       startedAt: row.started_at,
-      templateName: row.template_name ?? "Training session",
+      templateName: row.template_name ?? "Workout",
     };
   });
 
@@ -299,7 +485,8 @@ function buildHistory(
 function buildExerciseIndex(sessions: HistorySession[]) {
   const timelines = new Map<string, ExerciseTimeline>();
 
-  for (const session of [...sessions].reverse()) {
+  // Sessions arrive newest first, so each exercise's exposures do too.
+  for (const session of sessions) {
     for (const exercise of session.exercises) {
       if (!exercise.exerciseId || exercise.completedSets === 0) continue;
       const exposure = {

@@ -616,6 +616,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      exercise_history_summaries: {
+        Args: never;
+        Returns: {
+          exercise_id: string;
+          exercise_name: string;
+          exposure_count: number;
+          is_custom: boolean;
+          last_ended_at: string;
+          primary_muscle_name: string | null;
+          primary_muscle_slug: string | null;
+          tracking_type: Database["public"]["Enums"]["exercise_tracking_type"];
+        }[];
+      };
       finish_session: {
         Args: {
           p_session_id: string;

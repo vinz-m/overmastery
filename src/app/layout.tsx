@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: "Overmastery",
     template: "%s · Overmastery",
   },
-  description: "Your plans, sessions, and progress. One step at a time.",
+  description: "Your workouts and progress, one step at a time.",
   formatDetection: {
     telephone: false,
   },

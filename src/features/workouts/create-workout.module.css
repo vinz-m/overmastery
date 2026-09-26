@@ -37,6 +37,7 @@
   padding-left: 16px;
   font: 750 11px var(--font-geist-sans);
   letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .topbar > button {
   align-self: stretch;

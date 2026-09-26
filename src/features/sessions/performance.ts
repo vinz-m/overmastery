@@ -39,7 +39,7 @@ export function comparePerformance(
 ): PerformanceComparison {
   if (!current) return { label: "No completed sets", state: "new" };
   if (previous.reps.length === 0) {
-    return { label: "Baseline recorded", state: "new" };
+    return { label: "First time logged", state: "new" };
   }
 
   const currentLoad = current.loadKg ?? 0;
@@ -61,7 +61,7 @@ export function comparePerformance(
     }
 
     return {
-      label: "Different set structure",
+      label: "Can’t compare to last time",
       state: "notComparable",
     };
   }
@@ -92,7 +92,7 @@ export function comparePerformance(
     return { label: "Matched previous", state: "matched" };
   }
 
-  return { label: "Different set structure", state: "notComparable" };
+  return { label: "Can’t compare to last time", state: "notComparable" };
 }
 
 export function formatLoad(value: number | null) {
@@ -102,6 +102,12 @@ export function formatLoad(value: number | null) {
 
 export function formatReps(reps: number[]) {
   return reps.length > 0 ? reps.join(" / ") : "—";
+}
+
+export function loadLabel(trackingType: TrackingType) {
+  if (trackingType === "assistance_reps") return "Assistance";
+  if (trackingType === "bodyweight_reps") return "Added weight";
+  return "Weight";
 }
 
 /** "80 kg", "+10 kg" on a bodyweight exercise, "30 kg assistance", or null at plain bodyweight. */

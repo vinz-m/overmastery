@@ -2,8 +2,14 @@ import type { ExerciseCatalogItem } from "@/features/workouts/types";
 
 export type ExerciseSourceFilter = "all" | "archived" | "custom" | "library";
 
-export type ExerciseGroup = {
-  exercises: ExerciseCatalogItem[];
+/** Anything that can be sorted into the library's muscle groups. */
+export type GroupableExercise = Pick<
+  ExerciseCatalogItem,
+  "isArchived" | "isCustom" | "primaryMuscle"
+>;
+
+export type ExerciseGroup<T extends GroupableExercise = ExerciseCatalogItem> = {
+  exercises: T[];
   key: string;
   label: string;
 };
@@ -45,10 +51,11 @@ export function filterExercises(
   });
 }
 
-export function groupExercises(
-  exercises: readonly ExerciseCatalogItem[],
-): ExerciseGroup[] {
-  const grouped = new Map<string, ExerciseGroup>();
+/** Groups by primary muscle in the library's order, keeping each group's input order. */
+export function groupExercises<T extends GroupableExercise>(
+  exercises: readonly T[],
+): ExerciseGroup<T>[] {
+  const grouped = new Map<string, ExerciseGroup<T>>();
 
   for (const exercise of exercises) {
     const key = exercise.isArchived

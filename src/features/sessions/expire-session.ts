@@ -25,7 +25,8 @@ export async function expireStaleSession(
     .eq("user_id", userId)
     .eq("status", "active")
     .maybeSingle();
-  if (error) throw new Error("Your active session could not be checked.");
+  if (error)
+    throw new Error("Your current workout couldn’t be checked. Try again.");
   if (!session) return null;
   // This device still holds sets for it that the server hasn't seen, so its
   // last activity is unknown here. Let them sync first.
@@ -72,7 +73,7 @@ export async function closeExpiredSession(
       .eq("id", sessionId)
       .eq("status", "active");
     if (error)
-      throw new Error("Your previous session could not be closed. Try again.");
+      throw new Error("Your last workout couldn’t be closed. Try again.");
     return "removed";
   }
 
@@ -82,7 +83,7 @@ export async function closeExpiredSession(
     p_session_id: sessionId,
   });
   if (error)
-    throw new Error("Your previous session could not be closed. Try again.");
+    throw new Error("Your last workout couldn’t be closed. Try again.");
   if (outcome === "finished")
     await supabase
       .from("training_sessions")

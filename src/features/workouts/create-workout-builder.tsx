@@ -148,21 +148,21 @@ function SelectedExerciseRow({
             onChange={(value) => onUpdate("targetSets", value)}
           />
           <NumberField
-            label="Rep min"
+            label="Min reps"
             max={100}
             min={1}
             value={exercise.targetRepMin}
             onChange={(value) => onUpdate("targetRepMin", value)}
           />
           <NumberField
-            label="Rep max"
+            label="Max reps"
             max={100}
             min={exercise.targetRepMin}
             value={exercise.targetRepMax}
             onChange={(value) => onUpdate("targetRepMax", value)}
           />
           <NumberField
-            label="Rest sec"
+            label="Rest (sec)"
             max={3600}
             min={0}
             step={15}
@@ -313,7 +313,7 @@ export function CreateWorkoutBuilder({
           >
             <ArrowLeftIcon aria-hidden="true" size={20} weight="bold" />
           </Link>
-          <strong>{workout ? "EDIT WORKOUT" : "NEW WORKOUT"}</strong>
+          <strong>{workout ? "Edit workout" : "New workout"}</strong>
           <button
             disabled={workoutPending || selected.length === 0}
             type="submit"
@@ -323,7 +323,7 @@ export function CreateWorkoutBuilder({
         </header>
 
         <section className={styles.identity}>
-          <p>Workout template</p>
+          <p>Workout details</p>
           <label>
             <span>Name your workout</span>
             <input
@@ -356,7 +356,7 @@ export function CreateWorkoutBuilder({
         <section className={styles.ledger}>
           <header>
             <div>
-              <span>Session order</span>
+              <span>Exercise order</span>
               <strong>
                 {selected.length
                   ? `${selected.length} ${selected.length === 1 ? "exercise" : "exercises"}`
@@ -368,14 +368,14 @@ export function CreateWorkoutBuilder({
 
           {showConfigureGuide && (
             <Coachmark
-              body="Set the working sets, rep range, and rest that should be waiting when this workout starts."
+              body="Choose the sets, rep range, and rest for each exercise. They’re used every time you start this workout."
               dismiss={() =>
                 markGuidance(
                   "workout-builder.configure-exercise.v1",
                   "dismissed",
                 )
               }
-              label="Shape the plan"
+              label="Set up each exercise"
             />
           )}
 
@@ -447,11 +447,11 @@ export function CreateWorkoutBuilder({
 
           {showAddGuide && (
             <Coachmark
-              body="Search the library and add the first movement in your training order."
+              body="Search the library and add exercises in the order you’ll do them."
               dismiss={() =>
                 markGuidance("workout-builder.add-exercise.v1", "dismissed")
               }
-              label="Build from the work"
+              label="Add your first exercise"
             />
           )}
 
@@ -526,11 +526,11 @@ export function CreateWorkoutBuilder({
         {!workout && showSaveGuide && (
           <div className={styles.saveGuide}>
             <Coachmark
-              body="Your workout is ready to save. It will return to Workouts as a reusable template."
+              body="Save it and it’ll be waiting under Workouts the next time you train."
               dismiss={() =>
                 markGuidance("workout-builder.save-workout.v1", "dismissed")
               }
-              label="Keep the plan"
+              label="Ready to save"
             />
           </div>
         )}
@@ -563,14 +563,14 @@ export function CreateWorkoutBuilder({
           onSubmit={(event) => {
             if (
               !window.confirm(
-                `Archive ${workout.name}? Your completed sessions will stay in history.`,
+                `Archive ${workout.name}? Your completed workouts will stay in your history.`,
               )
             )
               event.preventDefault();
           }}
         >
           <button type="submit">Archive workout</button>
-          <p>Completed sessions and performance history will not be removed.</p>
+          <p>Your past workouts and progress won’t be removed.</p>
         </form>
       )}
 

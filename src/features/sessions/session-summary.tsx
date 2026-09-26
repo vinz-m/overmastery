@@ -52,7 +52,7 @@ export function SessionSummary({
     <main className={styles.page}>
       <section className={styles.shell}>
         <header>
-          <strong>SESSION COMPLETE</strong>
+          <strong>Workout complete</strong>
           <span>{session.templateName}</span>
         </header>
         <section className={styles.lead}>
@@ -60,32 +60,39 @@ export function SessionSummary({
           <p>{lead.label}</p>
           <h1>{lead.headline}</h1>
           <span>
-            {completedSets} completed working{" "}
-            {completedSets === 1 ? "set" : "sets"}
+            {results.filter((result) => result.current).length} of{" "}
+            {results.length} exercises · {completedSets}{" "}
+            {completedSets === 1 ? "set" : "sets"} done
           </span>
         </section>
         <section className={styles.results}>
-          {results.map(({ comparison, current, exercise, plan }) => (
-            <article key={exercise.id}>
-              <div>
+          {results.map(({ comparison, current, exercise, plan }) =>
+            // A skipped exercise gets one quiet line, so it can't pass for a done one.
+            current ? (
+              <article key={exercise.id}>
+                <div>
+                  <h2>{exercise.name}</h2>
+                  <span>
+                    {formatPerformance(
+                      exercise.trackingType,
+                      current.loadKg,
+                      current.reps,
+                      current.unit ?? unitSystem,
+                    )}
+                  </span>
+                  <small>{planOutcomeLabel(plan)}</small>
+                </div>
+                <strong className={styles[comparison.state]}>
+                  {comparison.label}
+                </strong>
+              </article>
+            ) : (
+              <article className={styles.skipped} key={exercise.id}>
                 <h2>{exercise.name}</h2>
-                <span>
-                  {current
-                    ? formatPerformance(
-                        exercise.trackingType,
-                        current.loadKg,
-                        current.reps,
-                        current.unit ?? unitSystem,
-                      )
-                    : "Skipped"}
-                </span>
-                <small>{planOutcomeLabel(plan)}</small>
-              </div>
-              <strong className={styles[comparison.state]}>
-                {comparison.label}
-              </strong>
-            </article>
-          ))}
+                <strong>Skipped</strong>
+              </article>
+            ),
+          )}
         </section>
         <Link className={styles.homeAction} href="/" transitionTypes={navBack}>
           Done <ArrowRightIcon aria-hidden="true" size={19} weight="bold" />

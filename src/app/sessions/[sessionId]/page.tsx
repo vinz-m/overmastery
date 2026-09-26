@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ActiveSessionScreen } from "@/features/sessions/active-session";
+import { currentExerciseCookie } from "@/features/sessions/current-exercise-cookie";
 import { getSessionWorkspace } from "@/features/sessions/data";
 import { expireStaleSession } from "@/features/sessions/expire-session";
 import { requireUser, requireUserId } from "@/lib/auth/session";
@@ -15,11 +17,12 @@ export default async function ActiveSessionPage({
     requireUserId(),
     createClient(),
   ]);
-  const [user, workspace, expired] = await Promise.all([
+  const [user, workspace, expired, cookieStore] = await Promise.all([
     requireUser(),
     getSessionWorkspace(supabase, sessionId, userId),
     // A workout that went idle is closed rather than resumed.
     expireStaleSession(supabase, userId),
+    cookies(),
   ]);
 
   if (expired?.id === sessionId) {
@@ -37,6 +40,9 @@ export default async function ActiveSessionPage({
     <PageTransition>
       <ActiveSessionScreen
         catalog={workspace.catalog}
+        rememberedExerciseId={
+          cookieStore.get(currentExerciseCookie)?.value ?? null
+        }
         session={workspace.session}
         unitSystem={user.unitSystem}
       />

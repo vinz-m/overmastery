@@ -84,7 +84,7 @@ export async function saveCompletedSet(
         input.loadKg < 0 ||
         input.loadKg > 10000
   ) {
-    return failure("Enter a valid load.");
+    return failure("Enter a valid weight.");
   }
   const loadKg = loadOptional && input.loadKg === 0 ? null : input.loadKg;
 

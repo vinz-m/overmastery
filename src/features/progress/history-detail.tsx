@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { ArrowLeftIcon } from "@phosphor-icons/react/ssr";
 
-import { formatDuration, formatSessionDate } from "./format";
+import {
+  countLabel,
+  formatDuration,
+  formatSessionDate,
+  planLabel,
+  timeLabel,
+} from "./format";
 import styles from "./progress.module.css";
-import type { ExerciseTimeline, HistorySession } from "./types";
+import { SessionRecord } from "./session-record";
+import type {
+  ExerciseTimeline,
+  HistorySession,
+  WorkoutHistoryPage,
+} from "./types";
+import { WorkoutHistory } from "./workout-history";
 import type { UnitSystem } from "@/lib/units";
 import { formatPerformance } from "@/features/sessions/performance";
 import { navBack, navForward } from "@/features/navigation/page-transition";
@@ -15,6 +27,9 @@ export function SessionHistoryDetail({
   session: HistorySession;
   unitSystem: UnitSystem;
 }) {
+  const doneExercises = session.exercises.filter(
+    (exercise) => exercise.completedSets > 0,
+  ).length;
   return (
     <main className={styles.darkPage}>
       <section className={styles.darkShell}>
@@ -32,57 +47,45 @@ export function SessionHistoryDetail({
           </div>
         </header>
         <section className={styles.detailLead}>
-          <p>Completed session</p>
+          <p>Completed workout</p>
           <h1>{session.templateName}</h1>
           <span>
+            {doneExercises} of {session.exercises.length} exercises ·{" "}
             {session.completedSets} working sets ·{" "}
             {formatDuration(session.startedAt, session.endedAt)}
           </span>
         </section>
-        <section className={styles.detailResults}>
-          {session.exercises.map((exercise, index) => {
-            const content = (
-              <>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <h2>{exercise.name}</h2>
-                  <p>
-                    {exercise.completedSets
-                      ? formatPerformance(
-                          exercise.trackingType,
-                          exercise.loadKg,
-                          exercise.reps,
-                          exercise.unit ?? unitSystem,
-                        )
-                      : "Skipped"}
-                  </p>
-                  <small>
-                    {planLabel(
-                      exercise.plannedCompletedSets,
-                      exercise.plannedSets,
-                      exercise.skippedSets,
-                      exercise.extraCompletedSets,
-                    )}
-                  </small>
-                </div>
-                <strong className={styles[exercise.comparison.state]}>
-                  {exercise.comparison.label}
-                </strong>
-              </>
-            );
-            return exercise.exerciseId ? (
-              <Link
-                href={`/progress/exercises/${exercise.exerciseId}`}
-                key={exercise.id}
-                transitionTypes={navForward}
-              >
-                {content}
-              </Link>
-            ) : (
-              <article key={exercise.id}>{content}</article>
-            );
-          })}
+        <SessionRecord session={session} unitSystem={unitSystem} />
+      </section>
+    </main>
+  );
+}
+
+export function WorkoutHistoryDetail({
+  initial,
+  total,
+}: {
+  initial: WorkoutHistoryPage;
+  total: number;
+}) {
+  return (
+    <main className={styles.page}>
+      <section className={styles.detailShell}>
+        <header className={styles.lightDetailHeader}>
+          <Link
+            href="/progress"
+            aria-label="Back to progress"
+            transitionTypes={navBack}
+          >
+            <ArrowLeftIcon aria-hidden="true" size={20} weight="bold" />
+          </Link>
+          <span>Workout history</span>
+        </header>
+        <section className={styles.exerciseLead}>
+          <p>{countLabel(total, "workout")} logged</p>
+          <h1>All workouts</h1>
         </section>
+        <WorkoutHistory initial={initial} />
       </section>
     </main>
   );
@@ -90,10 +93,8 @@ export function SessionHistoryDetail({
 
 export function ExerciseHistoryDetail({
   timeline,
-  unitSystem,
 }: {
   timeline: ExerciseTimeline;
-  unitSystem: UnitSystem;
 }) {
   const latest = timeline.exposures[0];
   return (
@@ -111,8 +112,10 @@ export function ExerciseHistoryDetail({
         </header>
         <section className={styles.exerciseLead}>
           <p>
-            {timeline.exposures.length} recorded{" "}
-            {timeline.exposures.length === 1 ? "exposure" : "exposures"}
+            Logged{" "}
+            {timeline.exposures.length === 1
+              ? "once"
+              : `${timeline.exposures.length} times`}
           </p>
           <h1>{timeline.name}</h1>
           <span>
@@ -121,7 +124,7 @@ export function ExerciseHistoryDetail({
               timeline.trackingType,
               latest.loadKg,
               latest.reps,
-              latest.unit ?? unitSystem,
+              latest.displayUnit,
             )}
           </span>
         </section>
@@ -137,7 +140,7 @@ export function ExerciseHistoryDetail({
                 <small>
                   {index === 0
                     ? "Latest"
-                    : `Exposure ${timeline.exposures.length - index}`}
+                    : timeLabel(timeline.exposures.length - index)}
                 </small>
               </time>
               <div>
@@ -146,7 +149,7 @@ export function ExerciseHistoryDetail({
                     timeline.trackingType,
                     exposure.loadKg,
                     exposure.reps,
-                    exposure.unit ?? unitSystem,
+                    exposure.displayUnit,
                   )}
                 </strong>
                 <small>
@@ -168,16 +171,4 @@ export function ExerciseHistoryDetail({
       </section>
     </main>
   );
-}
-
-function planLabel(
-  completed: number,
-  planned: number,
-  skipped: number,
-  extras: number,
-) {
-  if (planned === 0) return `${extras} completed`;
-  const skippedCopy = skipped ? ` · ${skipped} skipped` : "";
-  const extraCopy = extras ? ` · +${extras} extra` : "";
-  return `${completed}/${planned} planned sets completed${skippedCopy}${extraCopy}`;
 }

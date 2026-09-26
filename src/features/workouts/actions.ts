@@ -247,7 +247,7 @@ export async function createCustomExercise(
   }
 
   if (!trackingTypes.has(trackingType)) {
-    return { message: "Choose a supported tracking type." };
+    return { message: "Choose how to track this exercise." };
   }
 
   const supabase = await createClient();
@@ -298,7 +298,7 @@ export async function updateCustomExercise(
     fieldErrors.name = "Use between 2 and 120 characters.";
   }
   if (!trackingTypes.has(trackingType)) {
-    fieldErrors.trackingType = "Choose a supported tracking type.";
+    fieldErrors.trackingType = "Choose how to track this exercise.";
   }
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
 

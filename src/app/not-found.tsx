@@ -7,7 +7,7 @@ export default function NotFound() {
     <RouteState
       status="Page not found"
       title="Nothing lives at this address."
-      description="The link may be old, or the workout or session it pointed to was removed."
+      description="The link may be old, or the workout it pointed to was removed."
       actions={<Link href="/">Return to Today</Link>}
     />
   );

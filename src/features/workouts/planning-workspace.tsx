@@ -75,7 +75,7 @@ export function WorkoutPlanningWorkspace({
           id="workouts-tab"
           onSelect={() => selectView("workouts")}
         >
-          Workout templates
+          Saved workouts
         </PlanningTab>
         <PlanningTab
           active={viewState.view === "exercises"}
@@ -89,7 +89,7 @@ export function WorkoutPlanningWorkspace({
 
       {!hasSeenGuidance(guidance, "workouts.overview.v1") && (
         <ContextualTip
-          body="Build reusable workout templates here, or switch to the exercise library to browse and create exercises."
+          body="Build workouts you can reuse, or switch to the exercise library to browse and create exercises."
           guidanceKey="workouts.overview.v1"
           title="Plan your training"
         />

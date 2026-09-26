@@ -23,6 +23,7 @@
 .shell > header strong {
   font: 750 11px var(--font-geist-sans);
   letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
 .shell > header span {
   overflow: hidden;
@@ -211,4 +212,21 @@
 .homeAction {
   width: calc(100% - 40px);
   margin-inline: 20px;
+}
+/* One line for a skipped exercise: its name and a quiet tag, no results. */
+.results article.skipped {
+  padding-block: 14px;
+}
+.results .skipped h2 {
+  color: var(--muted);
+  font-weight: 500;
+}
+.results .skipped > strong {
+  flex: none;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
 }

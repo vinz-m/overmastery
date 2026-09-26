@@ -78,7 +78,7 @@ export async function signIn(
   if (error) {
     return {
       fields,
-      message: "That email and password combination was not recognized.",
+      message: "Email or password is incorrect.",
     };
   }
 
@@ -120,7 +120,7 @@ export async function signUp(
         error.code === "user_already_exists"
           ? "An account with that email already exists. Sign in instead."
           : error.message === "fetch failed"
-            ? "The authentication service could not be reached. Try again in a moment."
+            ? "Couldn’t reach the server. Check your connection and try again."
             : "Your account could not be created. Check the details and try again.",
     };
   }
@@ -164,7 +164,7 @@ export async function requestPasswordReset(
     return {
       fields,
       message:
-        "The authentication service could not be reached. Try again in a moment.",
+        "Couldn’t reach the server. Check your connection and try again.",
     };
   }
 

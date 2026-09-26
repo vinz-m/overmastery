@@ -100,10 +100,11 @@ export function planTokens(plan: SetPlanProjection) {
 }
 
 export function planOutcomeLabel(plan: SetPlanProjection) {
+  // With no set count to aim for, every set is an extra, so just count them.
   const parts = [
     plan.planned.total > 0
       ? `${plan.planned.completed}/${plan.planned.total} done`
-      : "Open plan",
+      : `${plan.extra.completed} done`,
   ];
   if (plan.planned.skipped > 0) {
     parts.push(`${plan.planned.skipped} skipped`);
@@ -111,7 +112,7 @@ export function planOutcomeLabel(plan: SetPlanProjection) {
   if (plan.planned.open > 0) {
     parts.push(`${plan.planned.open} open`);
   }
-  if (plan.extra.completed > 0) {
+  if (plan.planned.total > 0 && plan.extra.completed > 0) {
     parts.push(`+${plan.extra.completed} extra`);
   }
   if (plan.extra.open > 0) {
@@ -121,7 +122,7 @@ export function planOutcomeLabel(plan: SetPlanProjection) {
 }
 
 export function removalActionLabel({ isPlanned }: { isPlanned: boolean }) {
-  return isPlanned ? "Skip planned set" : "Remove extra set";
+  return isPlanned ? "Skip set" : "Remove extra set";
 }
 
 function countStatus(slots: SetSlot[], status: SetStatus) {

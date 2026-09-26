@@ -38,7 +38,8 @@ _Avoid_: Entry, result
 
 **Planned Set**:
 A set slot created from the workout template when a training session starts. It remains part of that session's plan whether it is open, completed, or skipped.
-_Avoid_: Required set, remaining set
+In the interface a planned set is just a "set": it is one of the workout's usual sets, as opposed to an extra set the user added. Only extra sets carry a qualifier ("Extra set 1", "+1 extra"), so user-facing copy says "Skip set" and "2 of 3 sets done", never "planned set". Planned Set remains the term in code and the database.
+_Avoid_: Required set, remaining set, target set (Target means a performance to beat)
 
 **Extra Set**:
 A set added by the user during a training session beyond the planned sets. It may be removed before completion without changing the original plan.
@@ -83,3 +84,22 @@ _Avoid_: Program, calendar
 **Schedule Slot**:
 One intended training day within a training schedule, optionally associated with a workout template.
 _Avoid_: Scheduled session, required workout
+
+## Interface wording
+
+The terms above are for code, schema, and docs. On screen, use the words people say at the gym:
+
+| Domain term | On screen | Example |
+| --- | --- | --- |
+| Training Session | workout | "Finish workout", "Completed workout", "Recent workouts" |
+| Workout Template | workout, or saved workout where it must be told apart | "Start workout", "Saved workouts" |
+| Planned Set | set | "Skip set", "2 of 3 sets done" |
+| Extra Set | extra set | "Extra set 1", "+1 extra" |
+| Exercise Exposure | time (the exercise was done) | "Logged 6 times", "4th time" |
+| Exercise Baseline | first time | "First time logged" |
+| Load | weight (or "assistance", "added weight" by tracking type) | "Enter a valid weight." |
+
+_Avoid on screen_: session, template, exposure, baseline, load, movement.
+
+**Units**: an exercise reads in the unit it was last logged in, everywhere: Home, the workout screen, summaries, Progress, and its whole history. Machines and plates are labelled in kg or lb, so a lb machine keeps showing the lb numbers on it, and one exercise's history never mixes units. The profile unit is the default for new exercises and for sets logged without an explicit unit. A workout can therefore mix kg and lb across exercises; that is intended. Converted values that do appear are rounded to one decimal.
+

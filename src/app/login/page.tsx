@@ -20,7 +20,7 @@ export default async function LoginPage({
 
   return (
     <AuthShell
-      copy="Pick up where your last session left off."
+      copy="Pick up where your last workout left off."
       footer={
         <>
           New to Overmastery? <Link href="/signup">Create an account</Link>
