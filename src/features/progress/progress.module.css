@@ -1043,3 +1043,44 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* An exercise's progress in plain words, above the full list of times. */
+.progressStory {
+  display: grid;
+  gap: 12px;
+  margin: 0 20px 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.progressStory h2 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+.progressStory dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.progressStory dl > div {
+  display: grid;
+  gap: 2px;
+}
+.progressStory dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.progressStory dd {
+  margin: 0;
+  font: 600 14px var(--font-geist-mono);
+}
+/* Why there's no comparison, on its own line under the numbers. */
+.progressStory dd small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font: 500 12px/1.4 var(--font-geist-sans);
+}

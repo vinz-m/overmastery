@@ -202,7 +202,7 @@ A PWA allows:
 - immediate updates
 - inexpensive private testing
 - desktop access
-- eventual migration to native packaging
+- eventual migration to a native app
 
 Users should be able to:
 
@@ -218,10 +218,12 @@ If Overmastery proves useful and worth distributing more broadly:
 ```text
 PWA
  ↓
-Capacitor
+Expo (React Native) app, rebuilt separately
  ↓
 Android / iOS
 ```
+
+The native app is a separate Expo rebuild rather than the PWA wrapped in a WebView. It shares the Supabase backend and can reuse plain TypeScript domain logic (calculations, formatting, chart data), but not web UI code or web-only libraries. Keep that logic in modules free of React and DOM code so it carries over.
 
 Native distribution should not be a requirement for the MVP.
 
@@ -1011,10 +1013,10 @@ PWA
 IndexedDB
 ```
 
-Potential future packaging:
+Future native app:
 
 ```text
-Capacitor
+Expo (React Native)
 ```
 
 These technologies are starting points, not immutable requirements.
@@ -1197,7 +1199,7 @@ Features to consider only after the core experience is proven:
 - drop sets
 - multiple progression strategies
 - export/import
-- native Android/iOS packaging
+- native Android/iOS app (Expo rebuild)
 
 None of these should delay validating the basic progression loop.
 

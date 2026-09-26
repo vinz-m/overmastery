@@ -8,6 +8,7 @@ import {
   planLabel,
   timeLabel,
 } from "./format";
+import { buildExerciseProgress } from "./exercise-progress";
 import styles from "./progress.module.css";
 import { SessionRecord } from "./session-record";
 import type {
@@ -97,6 +98,7 @@ export function ExerciseHistoryDetail({
   timeline: ExerciseTimeline;
 }) {
   const latest = timeline.exposures[0];
+  const progress = buildExerciseProgress(timeline);
   return (
     <main className={styles.page}>
       <section className={styles.detailShell}>
@@ -128,6 +130,22 @@ export function ExerciseHistoryDetail({
             )}
           </span>
         </section>
+        {progress && (
+          <section className={styles.progressStory}>
+            <h2>{progress.headline}</h2>
+            <dl>
+              {progress.details.map((detail) => (
+                <div key={detail.label}>
+                  <dt>{detail.label}</dt>
+                  <dd>
+                    {detail.value}
+                    {detail.note && <small>{detail.note}</small>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
         <section className={styles.timeline}>
           {timeline.exposures.map((exposure, index) => (
             <Link
