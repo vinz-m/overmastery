@@ -80,7 +80,6 @@ export function ExerciseLibrary({
   return (
     <>
       <section className={styles.lead}>
-        <p>Exercises</p>
         <h1>Exercises</h1>
         <span>Browse the exercises you can add to a workout.</span>
       </section>

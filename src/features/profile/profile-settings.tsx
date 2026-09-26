@@ -66,7 +66,6 @@ export function ProfileSettings({
   return (
     <main className={styles.tabContent}>
       <section className={styles.lead}>
-        <p>Profile</p>
         <h1>Profile</h1>
         <span>Manage your training preferences and account.</span>
       </section>

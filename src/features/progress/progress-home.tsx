@@ -37,7 +37,6 @@ export function ProgressHome({
   return (
     <main className={styles.tabContent}>
       <section className={styles.lead}>
-        <p>Progress</p>
         <h1>Progress</h1>
         <span>
           Review recent workouts and see how each exercise is changing.

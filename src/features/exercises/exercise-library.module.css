@@ -36,12 +36,6 @@
 .lead {
   padding: 31px 20px 29px;
 }
-.lead p {
-  color: var(--accent);
-  font: 700 11px var(--font-geist-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-}
 .lead h1 {
   font-family: var(--font-display);
   font-weight: 500;
@@ -490,14 +484,6 @@
   max-width: 680px;
   margin: 10px 0 16px;
 }
-.lead > p,
-.lead p {
-  font-family: var(--font-geist-sans);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
 .lead > span,
 .lead span {
   max-width: 540px;
@@ -580,9 +566,6 @@
   margin: 0 0 8px;
   font-size: 36px;
   font-weight: 600;
-}
-.lead p {
-  margin-bottom: 7px;
 }
 .lead span {
   font-size: 14px;
